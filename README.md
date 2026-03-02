@@ -5,3 +5,5 @@ I've also been wanting to write my own locally hosted web link organizer as a st
 The idea to combine the two is more than likely the result of nostalgia.  Things just felt so new and fanciful back then... and I miss my dad.  I miss those times we spent together in that cold, air-conditioned room, with the hum of electronics and blinking lights.
 
 I really don't expect anyone to actually use this other than myself, and the rendering of how those old displays actually looked is far from true (colors?  only if it's green!).  I suppose it's really just a way to hold on to a little bit of something from decades past.
+
+I'm not really sure how much further I'm going to take this project as it fits my needs for the time being.
