@@ -5,7 +5,9 @@
 
 <PageTitle>LM Dashboard</PageTitle>
 
-<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "") @(_glitchActive ? "crt-glitch" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+    <div class="lm-glitch-bar"></div>
+    <div class="lm-glitch-flash"></div>
     <div class="lm-header">LM DASHBOARD</div>
 
     @{
@@ -160,6 +162,8 @@
             </span>
             <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
             <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
+            <button class="lm-btn @(_glitch ? "lm-btn-active" : "")" @onclick="ToggleGlitch">[GLITCH]</button>
+            <button class="lm-btn @(_matrix ? "lm-btn-active" : "")" @onclick="ToggleMatrix">[MATRIX]</button>
         </span>
     </div>
 </div>
@@ -175,7 +179,19 @@
     private Guid? _pendingDeleteId;
     private bool _scanlines = true;
     private bool _vignette = true;
+    private bool _glitch = true;
+    private bool _matrix = true;
     private double _brightness = 1.0;
+    private bool _glitchActive;
+    private System.Threading.Timer? _glitchTimer;
+    private System.Threading.Timer? _glitchOffTimer;
+    private System.Threading.Timer? _matrixTimer;
+    private System.Threading.Timer? _matrixStepTimer;
+    private Guid? _matrixTargetId;
+    private string? _matrixText;
+    private string? _matrixOriginal;
+    private int _matrixRevealIndex;
+    private static readonly string _glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*!?+=<>{}[]|/~^";
 
     private enum LinkFilter { All, Internal, External }
 
@@ -184,7 +200,7 @@
         <div class="lm-entry @(!link.PingEnabled ? "lm-entry-ping-disabled" : "")">
                 <div class="lm-entry-row1">
                     <span class="lm-ref">[@idx]</span>
-                    <span class="lm-name">@link.Name</span>
+                    <span class="lm-name @(_matrixTargetId == link.Id ? "lm-matrix-scramble" : "")">@(_matrixTargetId == link.Id && _matrixText is not null ? _matrixText : link.Name)</span>
                     @if (showType)
                     {
                         <span class="lm-type">@(link.IsExternal ? "EXT" : "INT")</span>
@@ -234,9 +250,15 @@
         _grouped = prefs.Grouped;
         _scanlines = prefs.Scanlines;
         _vignette = prefs.Vignette;
+        _glitch = prefs.Glitch;
+        _matrix = prefs.Matrix;
         _showFailingOnly = prefs.ShowFailingOnly;
         _brightness = prefs.Brightness;
         RefreshLinks();
+        if (_glitch)
+            ScheduleGlitchTimer();
+        if (_matrix)
+            ScheduleMatrixTimer();
     }
 
     private void HandleStoreChange()
@@ -299,6 +321,133 @@
     {
         _vignette = !_vignette;
         PersistPreferences();
+    }
+
+    private void ToggleGlitch()
+    {
+        _glitch = !_glitch;
+        if (_glitch)
+            ScheduleGlitchTimer();
+        else
+            StopGlitchTimers();
+        PersistPreferences();
+    }
+
+    private void ToggleMatrix()
+    {
+        _matrix = !_matrix;
+        if (_matrix)
+            ScheduleMatrixTimer();
+        else
+            StopMatrixTimers();
+        PersistPreferences();
+    }
+
+    private void ScheduleGlitchTimer()
+    {
+        _glitchTimer?.Dispose();
+        if (!_glitch) return;
+        var delay = TimeSpan.FromSeconds(Random.Shared.Next(30, 180));
+        _glitchTimer = new System.Threading.Timer(OnGlitchTick, null, delay, Timeout.InfiniteTimeSpan);
+    }
+
+    private void OnGlitchTick(object? state)
+    {
+        InvokeAsync(() =>
+        {
+            _glitchActive = true;
+            StateHasChanged();
+        });
+        _glitchOffTimer?.Dispose();
+        _glitchOffTimer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                _glitchActive = false;
+                StateHasChanged();
+                ScheduleGlitchTimer();
+            });
+        }, null, TimeSpan.FromMilliseconds(1500), Timeout.InfiniteTimeSpan);
+    }
+
+    private void ScheduleMatrixTimer()
+    {
+        _matrixTimer?.Dispose();
+        if (!_matrix) return;
+        var delay = TimeSpan.FromSeconds(Random.Shared.Next(30, 180));
+        _matrixTimer = new System.Threading.Timer(OnMatrixTick, null, delay, Timeout.InfiniteTimeSpan);
+    }
+
+    private void OnMatrixTick(object? state)
+    {
+        InvokeAsync(() =>
+        {
+            if (_filtered.Count == 0)
+            {
+                ScheduleMatrixTimer();
+                return;
+            }
+            var target = _filtered[Random.Shared.Next(_filtered.Count)];
+            _matrixTargetId = target.Id;
+            _matrixOriginal = target.Name;
+            _matrixRevealIndex = -8;
+            _matrixText = ScrambleString(_matrixOriginal, 0);
+            StateHasChanged();
+            _matrixStepTimer?.Dispose();
+            _matrixStepTimer = new System.Threading.Timer(OnMatrixStep, null, TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(50));
+        });
+    }
+
+    private void OnMatrixStep(object? state)
+    {
+        InvokeAsync(() =>
+        {
+            if (_matrixOriginal is null)
+            {
+                _matrixStepTimer?.Dispose();
+                return;
+            }
+            _matrixRevealIndex++;
+            if (_matrixRevealIndex >= _matrixOriginal.Length)
+            {
+                _matrixStepTimer?.Dispose();
+                _matrixTargetId = null;
+                _matrixText = null;
+                _matrixOriginal = null;
+                StateHasChanged();
+                ScheduleMatrixTimer();
+                return;
+            }
+            _matrixText = ScrambleString(_matrixOriginal, Math.Max(0, _matrixRevealIndex));
+            StateHasChanged();
+        });
+    }
+
+    private static string ScrambleString(string original, int revealCount)
+    {
+        var chars = original.ToCharArray();
+        for (var i = revealCount; i < chars.Length; i++)
+        {
+            if (chars[i] == ' ') continue;
+            chars[i] = _glitchChars[Random.Shared.Next(_glitchChars.Length)];
+        }
+        return new string(chars);
+    }
+
+    private void StopGlitchTimers()
+    {
+        _glitchTimer?.Dispose();
+        _glitchOffTimer?.Dispose();
+        _glitchActive = false;
+    }
+
+    private void StopMatrixTimers()
+    {
+        _matrixTimer?.Dispose();
+        _matrixStepTimer?.Dispose();
+        _matrixTargetId = null;
+        _matrixText = null;
+        _matrixOriginal = null;
     }
 
     private void OnBrightnessChanged(ChangeEventArgs e)
@@ -392,6 +541,8 @@
             Grouped = _grouped,
             Scanlines = _scanlines,
             Vignette = _vignette,
+            Glitch = _glitch,
+            Matrix = _matrix,
             ShowFailingOnly = _showFailingOnly,
             Brightness = _brightness
         });
@@ -453,5 +604,10 @@
         return (ok, warn, fail, waiting, pinging);
     }
 
-    public void Dispose() => Store.OnChange -= HandleStoreChange;
+    public void Dispose()
+    {
+        Store.OnChange -= HandleStoreChange;
+        StopGlitchTimers();
+        StopMatrixTimers();
+    }
 }

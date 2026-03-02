@@ -4,5 +4,7 @@
   "Scanlines": true,
   "Vignette": true,
   "ShowFailingOnly": false,
+  "Glitch": true,
+  "Matrix": true,
   "Brightness": 1
 }
