@@ -139,18 +139,9 @@ html, body {
     border-bottom: none;
 }
 
-.lm-entry-pinging {
-    animation: lm-ping-pulse 1.2s ease-in-out infinite;
-}
-
 .lm-entry-ping-disabled .lm-status-cell,
 .lm-entry-ping-disabled .lm-ping-time {
     opacity: 0.45;
-}
-
-@keyframes lm-ping-pulse {
-    0%, 100% { box-shadow: none; }
-    50%      { box-shadow: 0 0 8px 1px color-mix(in srgb, var(--lm-fg) 30%, transparent); }
 }
 
 /* Row 1: ref  name  type  interval  actions */

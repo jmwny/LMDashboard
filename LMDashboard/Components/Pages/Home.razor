@@ -171,7 +171,7 @@
 
     private RenderFragment RenderEntry(SiteLink link, int idx, bool showType) => __builder =>
     {
-        <div class="lm-entry @(link.IsPinging ? "lm-entry-pinging" : "") @(!link.PingEnabled ? "lm-entry-ping-disabled" : "")">
+        <div class="lm-entry @(!link.PingEnabled ? "lm-entry-ping-disabled" : "")">
                 <div class="lm-entry-row1">
                     <span class="lm-ref">[@idx]</span>
                     <span class="lm-name">@link.Name</span>
