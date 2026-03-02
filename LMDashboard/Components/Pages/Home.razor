@@ -1,0 +1,415 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject LinkStore Store
+
+<PageTitle>LM Dashboard</PageTitle>
+
+<div class="lm-dashboard theme-@_theme">
+    <div class="lm-header">LINE MODE WEB LINK DASHBOARD</div>
+
+    @{
+        var (okCount, warnCount, failCount, waitCount, pingCount) = GetStatusSummary();
+    }
+    <div class="lm-summary">
+        <span class="lm-summary-label">STATUS:</span>
+        <span class="lm-status-ok">@okCount OK</span>
+        <span class="lm-summary-sep">·</span>
+        <span class="lm-status-error">@failCount FAIL</span>
+        <span class="lm-summary-sep">·</span>
+        <span class="lm-status-redirect">@warnCount REDIR</span>
+        <span class="lm-summary-sep">·</span>
+        <span class="lm-status-pending">@pingCount PING</span>
+        <span class="lm-summary-sep">·</span>
+        <span class="lm-status-pending">@waitCount WAIT</span>
+    </div>
+
+    @if (_editing is not null)
+    {
+        <div class="lm-divider"></div>
+        <div class="lm-form">
+            <span class="lm-prompt">&gt; @(_isNew ? "ADD NEW LINK" : "EDIT LINK")</span>
+            <div class="lm-field">
+                <span class="lm-label">Name:</span>
+                <input class="lm-input" @bind="_editing.Name" placeholder="My Website" />
+            </div>
+            <div class="lm-field">
+                <span class="lm-label">URL:</span>
+                <input class="lm-input" @bind="_editing.Url" placeholder="https://example.com" />
+            </div>
+            <div class="lm-form-row">
+                <div class="lm-field">
+                    <span class="lm-label">Type:</span>
+                    <div class="lm-radio-group">
+                        <label class="lm-radio">
+                            <input type="radio" name="linkType" checked="@(!_editing.IsExternal)"
+                                   @onchange="() => SetExternal(false)" /> Internal
+                        </label>
+                        <label class="lm-radio">
+                            <input type="radio" name="linkType" checked="@(_editing.IsExternal)"
+                                   @onchange="() => SetExternal(true)" /> External
+                        </label>
+                    </div>
+                </div>
+                <div class="lm-field">
+                    <span class="lm-label">Interval:</span>
+                    <input class="lm-input lm-input-sm" type="number" min="1" @bind="_editing.PingIntervalSeconds" />
+                    <span>seconds</span>
+                </div>
+            </div>
+            <div class="lm-form-actions">
+                <button class="lm-btn" @onclick="SaveLink">[SAVE]</button>
+                <button class="lm-btn" @onclick="CancelEdit">[CANCEL]</button>
+            </div>
+        </div>
+    }
+
+    <div class="lm-divider"></div>
+    <div class="lm-toolbar">
+        <span class="lm-toolbar-title">LINK DIRECTORY (@_filtered.Count @(_filtered.Count == 1 ? "entry" : "entries"))</span>
+        <div class="lm-filter">
+            <span class="lm-filter-label">SHOW:</span>
+            <button class="lm-btn @(_filter == LinkFilter.All ? "lm-btn-active" : "")" @onclick="() => SetFilter(LinkFilter.All)">[ALL]</button>
+            <button class="lm-btn @(_filter == LinkFilter.Internal ? "lm-btn-active" : "")" @onclick="() => SetFilter(LinkFilter.Internal)">[INT]</button>
+            <button class="lm-btn @(_filter == LinkFilter.External ? "lm-btn-active" : "")" @onclick="() => SetFilter(LinkFilter.External)">[EXT]</button>
+            <span class="lm-filter-label">│</span>
+            @if (_filter == LinkFilter.All)
+            {
+                <button class="lm-btn @(_grouped ? "lm-btn-active" : "")" @onclick="ToggleGrouped">[GROUP]</button>
+            }
+            else
+            {
+                <button class="lm-btn lm-btn-disabled" disabled>[GROUP]</button>
+            }
+            <span class="lm-filter-label">│</span>
+            <button class="lm-btn @(_showFailingOnly ? "lm-btn-fail-active" : "")" @onclick="ToggleFailing">[FAIL]</button>
+        </div>
+        <button class="lm-btn" @onclick="AddNew">[ADD NEW]</button>
+    </div>
+    <div class="lm-divider"></div>
+
+    @if (_pendingDeleteId is not null)
+    {
+        var target = _links.Find(l => l.Id == _pendingDeleteId);
+        if (target is not null)
+        {
+            <div class="lm-confirm">
+                <span>Delete</span>
+                <span class="lm-confirm-name">"@target.Name"</span>
+                <span>?</span>
+                <button class="lm-btn lm-btn-danger" @onclick="ConfirmDelete">[YES]</button>
+                <button class="lm-btn" @onclick="CancelDelete">[NO]</button>
+            </div>
+        }
+    }
+
+    @if (_filtered.Count == 0)
+    {
+        <div class="lm-empty">@(_links.Count == 0 ? "No links configured. Press [ADD NEW] to begin." : _showFailingOnly ? "All links are healthy." : "No links match the current filter.")</div>
+    }
+    else if (_filter == LinkFilter.All && _grouped)
+    {
+        var internals = _filtered.Where(l => !l.IsExternal).ToList();
+        var externals = _filtered.Where(l => l.IsExternal).ToList();
+        var idx = 0;
+
+        if (internals.Count > 0)
+        {
+            <div class="lm-section-header">── INTERNAL (@internals.Count) ──</div>
+            @foreach (var link in internals)
+            {
+                idx++;
+                @RenderEntry(link, idx, showType: false)
+            }
+        }
+        if (externals.Count > 0)
+        {
+            <div class="lm-section-header">── EXTERNAL (@externals.Count) ──</div>
+            @foreach (var link in externals)
+            {
+                idx++;
+                @RenderEntry(link, idx, showType: false)
+            }
+        }
+    }
+    else
+    {
+        @for (var i = 0; i < _filtered.Count; i++)
+        {
+            var link = _filtered[i];
+            @RenderEntry(link, i + 1, showType: _filter == LinkFilter.All)
+        }
+    }
+
+    <div class="lm-divider"></div>
+    <div class="lm-footer">
+        <span>Auto-ping active. Defaults: INT 30s | EXT 300s</span>
+        <button class="lm-btn" @onclick="CycleTheme">[THEME: @_theme.ToUpperInvariant()]</button>
+    </div>
+</div>
+
+@code {
+    private List<SiteLink> _links = [];
+    private List<SiteLink> _filtered = [];
+    private SiteLink? _editing;
+    private bool _isNew;
+    private LinkFilter _filter = LinkFilter.All;
+    private bool _grouped;
+    private bool _showFailingOnly;
+    private Guid? _pendingDeleteId;
+    private string _theme = "green";
+
+    private static readonly string[] s_themes = ["green", "amber", "white"];
+
+    private enum LinkFilter { All, Internal, External }
+
+    private RenderFragment RenderEntry(SiteLink link, int idx, bool showType) => __builder =>
+    {
+        <div class="lm-entry">
+            <div class="lm-entry-row1">
+                <span class="lm-ref">[@idx]</span>
+                <span class="lm-name">@link.Name</span>
+                @if (showType)
+                {
+                    <span class="lm-type">@(link.IsExternal ? "EXT" : "INT")</span>
+                }
+                <span class="lm-interval">@FormatInterval(link.PingIntervalSeconds)</span>
+                <span class="lm-actions">
+                    <button class="lm-btn" @onclick="() => EditLink(link)">[EDIT]</button>
+                    <button class="lm-btn lm-btn-danger" @onclick="() => RequestDelete(link.Id)">[DEL]</button>
+                </span>
+            </div>
+            <div class="lm-entry-row2">
+                <span class="lm-url"><a href="@link.Url" target="_blank" rel="noopener">@link.Url</a></span>
+                <span class="lm-status-cell">
+                    @if (link.IsPinging)
+                    {
+                        <span class="lm-status-pending">■ PINGING...</span>
+                    }
+                    else if (link.LastChecked is not null)
+                    {
+                        <span class="@GetStatusClass(link.LastStatusCode)">■ @GetStatusDisplay(link.LastStatusCode, link.LastStatusDescription)</span>
+                    }
+                    else
+                    {
+                        <span class="lm-status-pending">■ WAITING</span>
+                    }
+                </span>
+                <span class="lm-ping-time">
+                    @if (link.LastPingMs is not null)
+                    {
+                        @($"{link.LastPingMs}ms")
+                    }
+                </span>
+            </div>
+        </div>
+    };
+
+    protected override void OnInitialized()
+    {
+        Store.OnChange += HandleStoreChange;
+        var prefs = Store.LoadPreferences();
+        _filter = Enum.TryParse<LinkFilter>(prefs.Filter, out var f) ? f : LinkFilter.All;
+        _grouped = prefs.Grouped;
+        _theme = s_themes.Contains(prefs.Theme) ? prefs.Theme : "green";
+        _showFailingOnly = prefs.ShowFailingOnly;
+        RefreshLinks();
+    }
+
+    private void HandleStoreChange()
+    {
+        InvokeAsync(() =>
+        {
+            RefreshLinks();
+            StateHasChanged();
+        });
+    }
+
+    private void RefreshLinks()
+    {
+        _links = Store.Links.OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        IEnumerable<SiteLink> result = _filter switch
+        {
+            LinkFilter.Internal => _links.Where(l => !l.IsExternal),
+            LinkFilter.External => _links.Where(l => l.IsExternal),
+            _ => _links
+        };
+
+        if (_showFailingOnly)
+            result = result.Where(l => l.LastChecked is not null && l.LastStatusCode is not (>= 200 and < 300));
+
+        _filtered = result.ToList();
+    }
+
+    private void SetFilter(LinkFilter filter)
+    {
+        _filter = filter;
+        ApplyFilter();
+        PersistPreferences();
+    }
+
+    private void ToggleGrouped()
+    {
+        _grouped = !_grouped;
+        PersistPreferences();
+    }
+
+    private void ToggleFailing()
+    {
+        _showFailingOnly = !_showFailingOnly;
+        ApplyFilter();
+        PersistPreferences();
+    }
+
+    private void CycleTheme()
+    {
+        var idx = Array.IndexOf(s_themes, _theme);
+        _theme = s_themes[(idx + 1) % s_themes.Length];
+        PersistPreferences();
+    }
+
+    private void AddNew()
+    {
+        _isNew = true;
+        _editing = new SiteLink { PingIntervalSeconds = 30 };
+    }
+
+    private void SetExternal(bool isExternal)
+    {
+        if (_editing is null) return;
+        _editing.IsExternal = isExternal;
+        if (_isNew)
+        {
+            _editing.PingIntervalSeconds = isExternal ? 300 : 30;
+        }
+    }
+
+    private void EditLink(SiteLink link)
+    {
+        _isNew = false;
+        _editing = new SiteLink
+        {
+            Id = link.Id,
+            Name = link.Name,
+            Url = link.Url,
+            IsExternal = link.IsExternal,
+            PingIntervalSeconds = link.PingIntervalSeconds
+        };
+    }
+
+    private void SaveLink()
+    {
+        if (_editing is null || string.IsNullOrWhiteSpace(_editing.Name) || string.IsNullOrWhiteSpace(_editing.Url))
+            return;
+
+        if (_isNew)
+            Store.Add(_editing);
+        else
+            Store.Update(_editing);
+
+        _editing = null;
+        _isNew = false;
+        RefreshLinks();
+    }
+
+    private void CancelEdit()
+    {
+        _editing = null;
+        _isNew = false;
+    }
+
+    private void RequestDelete(Guid id) => _pendingDeleteId = id;
+
+    private void ConfirmDelete()
+    {
+        if (_pendingDeleteId is not null)
+        {
+            var id = _pendingDeleteId.Value;
+            _pendingDeleteId = null;
+
+            Store.Remove(id);
+            if (_editing is not null && _editing.Id == id)
+            {
+                _editing = null;
+                _isNew = false;
+            }
+            RefreshLinks();
+        }
+    }
+
+    private void CancelDelete() => _pendingDeleteId = null;
+
+    private void PersistPreferences()
+    {
+        Store.SavePreferences(new DashboardPreferences
+        {
+            Filter = _filter.ToString(),
+            Grouped = _grouped,
+            Theme = _theme,
+            ShowFailingOnly = _showFailingOnly
+        });
+    }
+
+    private static string FormatInterval(int seconds) =>
+        seconds >= 60 ? $"{seconds / 60}m {seconds % 60}s" : $"{seconds}s";
+
+    private static string GetStatusClass(int? statusCode) => statusCode switch
+    {
+        >= 200 and < 300 => "lm-status-ok",
+        >= 300 and < 400 => "lm-status-redirect",
+        >= 400 and < 500 => "lm-status-client-err",
+        >= 500           => "lm-status-server-err",
+        _                => "lm-status-error"
+    };
+
+    private static string GetStatusDisplay(int? statusCode, string? description)
+    {
+        if (statusCode is null)
+            return description ?? "UNKNOWN";
+
+        var label = statusCode switch
+        {
+            200 => "OK",
+            201 => "Created",
+            204 => "No Content",
+            301 => "Moved Permanently",
+            302 => "Found (Redirect)",
+            304 => "Not Modified",
+            400 => "Bad Request",
+            401 => "Unauthorized",
+            403 => "Forbidden",
+            404 => "Not Found",
+            405 => "Method Not Allowed",
+            408 => "Request Timeout",
+            429 => "Too Many Requests",
+            500 => "Internal Server Error",
+            502 => "Bad Gateway",
+            503 => "Service Unavailable",
+            504 => "Gateway Timeout",
+            _   => description ?? "Unknown"
+        };
+
+        return $"{statusCode} {label}";
+    }
+
+    private (int ok, int warn, int fail, int waiting, int pinging) GetStatusSummary()
+    {
+        int ok = 0, warn = 0, fail = 0, waiting = 0, pinging = 0;
+        foreach (var l in _links)
+        {
+            if (l.IsPinging) pinging++;
+            else if (l.LastChecked is null) waiting++;
+            else if (l.LastStatusCode is >= 200 and < 300) ok++;
+            else if (l.LastStatusCode is >= 300 and < 400) warn++;
+            else fail++;
+        }
+        return (ok, warn, fail, waiting, pinging);
+    }
+
+    public void Dispose() => Store.OnChange -= HandleStoreChange;
+}
