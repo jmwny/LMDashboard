@@ -1,0 +1,86 @@
+[
+  {
+    "Id": "dcc3935e-3ae2-48ac-a1bd-7df8acc8f96e",
+    "Name": "WhenToWork",
+    "Url": "https://www.whentowork.com",
+    "IsExternal": true,
+    "PingIntervalSeconds": 300
+  },
+  {
+    "Id": "0e83b723-c881-405c-acb2-6736495fca53",
+    "Name": "Bookstack - Home",
+    "Url": "http://10.5.1.60:6875",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  },
+  {
+    "Id": "22a81079-ab7a-4cf2-9fc4-4580ac8f2ba7",
+    "Name": "Gotify",
+    "Url": "http://10.5.1.60:8181/",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  },
+  {
+    "Id": "36cecbb7-1a3b-43ba-a181-999e63288b37",
+    "Name": "Bookstack - NYP",
+    "Url": "https://bookstack.helix-2.com/",
+    "IsExternal": true,
+    "PingIntervalSeconds": 300
+  },
+  {
+    "Id": "eec27ad5-fb49-44a6-9728-557ace850924",
+    "Name": "Plex",
+    "Url": "http://10.5.1.40:32400",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  },
+  {
+    "Id": "d861aec6-c5af-4a51-abef-31cbac030a35",
+    "Name": "Portainer",
+    "Url": "https://10.5.1.60:9443",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  },
+  {
+    "Id": "56534366-b4ea-4605-a047-2cef45721051",
+    "Name": "Proxmox",
+    "Url": "https://10.5.1.10:8006",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  },
+  {
+    "Id": "8446bc65-b72b-40c3-bcd1-83fe0ee6b1d2",
+    "Name": "Prowlarr",
+    "Url": "http://10.5.1.90:9696",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  },
+  {
+    "Id": "b2afd302-fce4-4377-8256-bd0cf5cbc25c",
+    "Name": "Sonarr",
+    "Url": "http://10.5.1.90:8989/",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  },
+  {
+    "Id": "5deef713-c1f5-4fb4-b149-aed30d2ed071",
+    "Name": "Radarr",
+    "Url": "http://10.5.1.90:7878/",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  },
+  {
+    "Id": "2357188c-f719-459a-bfcf-b17048dcf302",
+    "Name": "Synology NAS",
+    "Url": "http://10.5.1.40:5000",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  },
+  {
+    "Id": "79b2e955-951c-45dc-b540-b88f51b7d245",
+    "Name": "PiHole",
+    "Url": "http://10.5.1.2/admin/",
+    "IsExternal": false,
+    "PingIntervalSeconds": 30
+  }
+]
