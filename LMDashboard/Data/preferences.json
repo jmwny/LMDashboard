@@ -1,6 +1,6 @@
 {
   "Filter": "All",
-  "Grouped": false,
+  "Grouped": true,
   "Theme": "green",
   "ShowFailingOnly": false
 }

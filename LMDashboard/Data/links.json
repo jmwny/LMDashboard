@@ -1,16 +1,1 @@
-[
-  {
-    "Id": "fe598617-f42d-4f95-9820-8882c650a986",
-    "Name": "Google",
-    "Url": "https://www.google.com",
-    "IsExternal": true,
-    "PingIntervalSeconds": 300
-  },
-  {
-    "Id": "46e5ea26-e565-40a0-80c6-5a679a3e9c04",
-    "Name": "Hacker News",
-    "Url": "https://news.ycombinator.com/",
-    "IsExternal": false,
-    "PingIntervalSeconds": 30
-  }
-]
+[]

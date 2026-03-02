@@ -108,6 +108,28 @@ public class LinkStore
         OnChange?.Invoke();
     }
 
+    public void TogglePingEnabled(Guid id)
+    {
+        lock (_lock)
+        {
+            var link = _links.Find(l => l.Id == id);
+            if (link is not null)
+            {
+                link.PingEnabled = !link.PingEnabled;
+                if (!link.PingEnabled)
+                {
+                    link.IsPinging = false;
+                    link.LastStatusCode = null;
+                    link.LastStatusDescription = null;
+                    link.LastPingMs = null;
+                    link.LastChecked = null;
+                }
+                Save();
+            }
+        }
+        OnChange?.Invoke();
+    }
+
     public DashboardPreferences LoadPreferences()
     {
         lock (_lock)
