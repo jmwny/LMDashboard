@@ -3,5 +3,6 @@
   "Grouped": true,
   "Scanlines": true,
   "Vignette": true,
-  "ShowFailingOnly": false
+  "ShowFailingOnly": false,
+  "Brightness": 1
 }
