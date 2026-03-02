@@ -9,6 +9,7 @@ public class SiteLink
     public string Url { get; set; } = string.Empty;
     public bool IsExternal { get; set; }
     public int PingIntervalSeconds { get; set; }
+    public bool PingEnabled { get; set; } = true;
 
     [JsonIgnore]
     public int? LastStatusCode { get; set; }

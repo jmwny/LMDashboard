@@ -16,7 +16,7 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
 
             foreach (var link in links)
             {
-                if (link.IsPinging)
+                if (!link.PingEnabled || link.IsPinging)
                     continue;
 
                 var needsPing = link.LastChecked is null
