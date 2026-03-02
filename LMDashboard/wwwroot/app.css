@@ -89,7 +89,14 @@ html, body {
     display: flex;
     gap: 1ch;
     align-items: baseline;
+    justify-content: space-between;
     padding: 0.1rem 0;
+}
+
+.lm-summary-left {
+    display: flex;
+    gap: 1ch;
+    align-items: baseline;
 }
 
 .lm-summary-label {
@@ -98,6 +105,21 @@ html, body {
 
 .lm-summary-sep {
     color: var(--lm-border);
+}
+
+/* Search */
+.lm-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5ch;
+}
+
+.lm-search-label {
+    color: var(--lm-fg-dim);
+}
+
+.lm-search-input {
+    width: 20ch;
 }
 
 /* Footer */
@@ -127,12 +149,14 @@ html, body {
     letter-spacing: 0.05em;
 }
 
-/* Link entries — two independent flex rows */
+/* Link entries — single compact row */
 .lm-entry {
     position: relative;
-    padding: 0.2rem 0;
+    display: flex;
+    align-items: baseline;
+    gap: 1ch;
+    padding: 0.1rem 0;
     border-bottom: 1px dashed var(--lm-border-dim);
-    cursor: pointer;
 }
 
 .lm-entry:hover {
@@ -148,11 +172,27 @@ html, body {
     opacity: 0.45;
 }
 
-/* Row 1: ref  name  type  interval  actions */
+.lm-entry-link {
+    display: flex;
+    align-items: baseline;
+    gap: 1ch;
+    flex: 1 1 0;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
+}
+
+.lm-entry-link:hover {
+    color: var(--lm-fg-bright);
+}
+
+/* Row 1: ref  name  type  status  ping-time  interval  actions */
 .lm-entry-row1 {
     display: flex;
     align-items: baseline;
     gap: 1ch;
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .lm-ref {
@@ -186,38 +226,6 @@ html, body {
     white-space: nowrap;
 }
 
-/* Row 2: url  status  ping-time */
-.lm-entry-row2 {
-    display: flex;
-    align-items: baseline;
-    gap: 1ch;
-    padding-left: 4ch;
-}
-
-.lm-url {
-    flex: 1 1 0;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.lm-url a {
-    color: var(--lm-accent);
-    text-decoration: none;
-}
-
-.lm-url a::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-}
-
-.lm-url a:hover {
-    color: var(--lm-accent-bright);
-}
-
 .lm-status-cell {
     flex-shrink: 0;
     white-space: nowrap;
@@ -228,6 +236,11 @@ html, body {
     flex-shrink: 0;
     min-width: 6ch;
     text-align: right;
+}
+
+.lm-entry-sep {
+    color: var(--lm-border);
+    flex-shrink: 0;
 }
 
 /* Status indicators */
@@ -466,6 +479,43 @@ html, body {
 
 .lm-brightness-slider:hover::-moz-range-thumb {
     background: var(--lm-fg-bright);
+}
+
+.lm-input-xs {
+    width: 6ch;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.lm-input-xs::-webkit-outer-spin-button,
+.lm-input-xs::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Animation config row */
+.lm-anim-config {
+    display: flex;
+    gap: 3ch;
+    align-items: center;
+    justify-content: flex-end;
+    color: var(--lm-fg-dim);
+    padding: 0.1rem 0;
+}
+
+.lm-anim-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5ch;
+}
+
+.lm-anim-label {
+    color: var(--lm-fg-dim);
+}
+
+.lm-anim-unit {
+    color: var(--lm-fg-dim);
 }
 
 /* ── Steampunk glitch effect (toggle, single-shot per trigger) ── */
