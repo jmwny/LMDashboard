@@ -7,3 +7,5 @@ The idea to combine the two is more than likely the result of nostalgia.  Things
 I really don't expect anyone to actually use this other than myself, and the rendering of how those old displays actually looked is far from true (colors?  only if it's green!).  I suppose it's really just a way to hold on to a little bit of something from decades past.
 
 I'm not really sure how much further I'm going to take this project as it fits my needs for the time being.
+
+<img width="822" height="488" alt="Screenshot 2026-03-02 142751" src="https://github.com/user-attachments/assets/dc735a22-a626-4ae0-b44c-8d068abf9bc8" />
