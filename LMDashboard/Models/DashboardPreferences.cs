@@ -4,6 +4,7 @@ public class DashboardPreferences
 {
     public string Filter { get; set; } = "All";
     public bool Grouped { get; set; }
-    public string Theme { get; set; } = "green";
+    public bool Scanlines { get; set; } = true;
+    public bool Vignette { get; set; } = true;
     public bool ShowFailingOnly { get; set; }
 }

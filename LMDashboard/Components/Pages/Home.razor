@@ -5,7 +5,7 @@
 
 <PageTitle>LM Dashboard</PageTitle>
 
-<div class="lm-dashboard theme-@_theme">
+<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "")">
     <div class="lm-header">LINE MODE WEB LINK DASHBOARD</div>
 
     @{
@@ -150,7 +150,10 @@
     <div class="lm-divider"></div>
     <div class="lm-footer">
         <span>Auto-ping active (toggle per link). Defaults: INT 30s | EXT 300s</span>
-        <button class="lm-btn" @onclick="CycleTheme">[THEME: @_theme.ToUpperInvariant()]</button>
+        <span>
+            <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
+            <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
+        </span>
     </div>
 </div>
 
@@ -163,9 +166,8 @@
     private bool _grouped;
     private bool _showFailingOnly;
     private Guid? _pendingDeleteId;
-    private string _theme = "green";
-
-    private static readonly string[] s_themes = ["green", "amber", "white"];
+    private bool _scanlines = true;
+    private bool _vignette = true;
 
     private enum LinkFilter { All, Internal, External }
 
@@ -222,7 +224,8 @@
         var prefs = Store.LoadPreferences();
         _filter = Enum.TryParse<LinkFilter>(prefs.Filter, out var f) ? f : LinkFilter.All;
         _grouped = prefs.Grouped;
-        _theme = s_themes.Contains(prefs.Theme) ? prefs.Theme : "green";
+        _scanlines = prefs.Scanlines;
+        _vignette = prefs.Vignette;
         _showFailingOnly = prefs.ShowFailingOnly;
         RefreshLinks();
     }
@@ -277,10 +280,15 @@
         PersistPreferences();
     }
 
-    private void CycleTheme()
+    private void ToggleScanlines()
     {
-        var idx = Array.IndexOf(s_themes, _theme);
-        _theme = s_themes[(idx + 1) % s_themes.Length];
+        _scanlines = !_scanlines;
+        PersistPreferences();
+    }
+
+    private void ToggleVignette()
+    {
+        _vignette = !_vignette;
         PersistPreferences();
     }
 
@@ -364,7 +372,8 @@
         {
             Filter = _filter.ToString(),
             Grouped = _grouped,
-            Theme = _theme,
+            Scanlines = _scanlines,
+            Vignette = _vignette,
             ShowFailingOnly = _showFailingOnly
         });
     }
