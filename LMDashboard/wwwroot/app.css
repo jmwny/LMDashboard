@@ -1,4 +1,4 @@
-/* ══════════════════════════════════════════════════
+ /* ══════════════════════════════════════════════════
    LINE MODE DASHBOARD — Terminal Theme
    ══════════════════════════════════════════════════ */
 
@@ -124,8 +124,15 @@ html, body {
 
 /* Link entries — two independent flex rows */
 .lm-entry {
+    position: relative;
     padding: 0.2rem 0;
     border-bottom: 1px dashed var(--lm-border-dim);
+    transition: box-shadow 0.15s ease;
+    cursor: pointer;
+}
+
+.lm-entry:hover {
+    box-shadow: 0 0 6px 1px color-mix(in srgb, var(--lm-fg) 35%, transparent);
 }
 
 .lm-entry:last-child {
@@ -164,6 +171,8 @@ html, body {
 }
 
 .lm-actions {
+    position: relative;
+    z-index: 1;
     flex-shrink: 0;
     white-space: nowrap;
 }
@@ -186,8 +195,14 @@ html, body {
 
 .lm-url a {
     color: var(--lm-accent);
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration: none;
+}
+
+.lm-url a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
 }
 
 .lm-url a:hover {
