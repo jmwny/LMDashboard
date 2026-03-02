@@ -5,8 +5,8 @@
 
 <PageTitle>LM Dashboard</PageTitle>
 
-<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "")">
-    <div class="lm-header">LINE MODE WEB LINK DASHBOARD</div>
+<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+    <div class="lm-header">LM DASHBOARD</div>
 
     @{
         var (okCount, warnCount, failCount, waitCount, pingCount) = GetStatusSummary();
@@ -149,8 +149,15 @@
 
     <div class="lm-divider"></div>
     <div class="lm-footer">
-        <span>Auto-ping active (toggle per link). Defaults: INT 30s | EXT 300s</span>
-        <span>
+        <span>(have some free space here // eMail? // something else?)</span>
+        <span class="lm-footer-controls">
+            <span class="lm-brightness">
+                <span class="lm-brightness-label">BRT:</span>
+                <input type="range" class="lm-brightness-slider" min="0.1" max="1.5" step="0.05"
+                       value="@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                       @oninput="OnBrightnessChanged" />
+                <span class="lm-brightness-value">@_brightness.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
+            </span>
             <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
             <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
         </span>
@@ -168,6 +175,7 @@
     private Guid? _pendingDeleteId;
     private bool _scanlines = true;
     private bool _vignette = true;
+    private double _brightness = 1.0;
 
     private enum LinkFilter { All, Internal, External }
 
@@ -227,6 +235,7 @@
         _scanlines = prefs.Scanlines;
         _vignette = prefs.Vignette;
         _showFailingOnly = prefs.ShowFailingOnly;
+        _brightness = prefs.Brightness;
         RefreshLinks();
     }
 
@@ -290,6 +299,15 @@
     {
         _vignette = !_vignette;
         PersistPreferences();
+    }
+
+    private void OnBrightnessChanged(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var val))
+        {
+            _brightness = val;
+            PersistPreferences();
+        }
     }
 
     private void AddNew()
@@ -374,7 +392,8 @@
             Grouped = _grouped,
             Scanlines = _scanlines,
             Vignette = _vignette,
-            ShowFailingOnly = _showFailingOnly
+            ShowFailingOnly = _showFailingOnly,
+            Brightness = _brightness
         });
     }
 

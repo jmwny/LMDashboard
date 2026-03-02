@@ -7,4 +7,5 @@ public class DashboardPreferences
     public bool Scanlines { get; set; } = true;
     public bool Vignette { get; set; } = true;
     public bool ShowFailingOnly { get; set; }
+    public double Brightness { get; set; } = 1.0;
 }
