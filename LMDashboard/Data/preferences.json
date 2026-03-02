@@ -1,6 +1,7 @@
 {
   "Filter": "All",
   "Grouped": true,
-  "Theme": "green",
+  "Scanlines": true,
+  "Vignette": true,
   "ShowFailingOnly": false
 }

@@ -19,7 +19,7 @@ html, body {
     line-height: 1.3;
 }
 
-/* ── Theme variables (green default) ── */
+/* ── Theme variables ── */
 .lm-dashboard {
     --lm-bg: #0c0c0c;
     --lm-fg: #33ff33;
@@ -33,30 +33,6 @@ html, body {
     --lm-label: #22bb22;
 }
 
-.lm-dashboard.theme-amber {
-    --lm-fg: #ffb833;
-    --lm-fg-bright: #ffdd88;
-    --lm-fg-dim: #665522;
-    --lm-accent: #cc9933;
-    --lm-accent-bright: #eebb66;
-    --lm-border: #6a5a1a;
-    --lm-border-dim: #3a3014;
-    --lm-ref: #ffee55;
-    --lm-label: #bb9922;
-}
-
-.lm-dashboard.theme-white {
-    --lm-fg: #cccccc;
-    --lm-fg-bright: #ffffff;
-    --lm-fg-dim: #555555;
-    --lm-accent: #88aacc;
-    --lm-accent-bright: #aaccee;
-    --lm-border: #444444;
-    --lm-border-dim: #2a2a2a;
-    --lm-ref: #ffffff;
-    --lm-label: #888888;
-}
-
 /* Layout */
 .lm-dashboard {
     background-color: var(--lm-bg);
@@ -66,6 +42,39 @@ html, body {
     margin: 0 auto;
     padding: 0.5rem 1.5rem;
     overflow: hidden;
+    position: relative;
+}
+
+/* Scanlines (toggle) */
+.lm-dashboard.crt-scanlines::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 2px,
+        rgba(0, 0, 0, 0.1) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+    border-radius: inherit;
+}
+
+/* Vignette (toggle) */
+.lm-dashboard.crt-vignette::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 50%,
+        rgba(0, 0, 0, 0.5) 100%
+    );
+    pointer-events: none;
+    z-index: 100;
+    border-radius: inherit;
 }
 
 /* Header */
@@ -127,12 +136,11 @@ html, body {
     position: relative;
     padding: 0.2rem 0;
     border-bottom: 1px dashed var(--lm-border-dim);
-    transition: box-shadow 0.15s ease;
     cursor: pointer;
 }
 
 .lm-entry:hover {
-    box-shadow: 0 0 6px 1px color-mix(in srgb, var(--lm-fg) 35%, transparent);
+    background-color: color-mix(in srgb, var(--lm-fg) 8%, transparent);
 }
 
 .lm-entry:last-child {
@@ -327,9 +335,10 @@ html, body {
 }
 
 .lm-input {
-    background: var(--lm-bg);
-    border: 1px solid var(--lm-fg);
-    color: var(--lm-fg);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--lm-fg);
+    color: var(--lm-fg-bright);
     font-family: inherit;
     font-size: inherit;
     padding: 0.1rem 0.4ch;
@@ -337,7 +346,8 @@ html, body {
 }
 
 .lm-input:focus {
-    outline: 1px solid var(--lm-fg-bright);
+    outline: none;
+    border-bottom-color: var(--lm-fg-bright);
 }
 
 .lm-input-sm {
