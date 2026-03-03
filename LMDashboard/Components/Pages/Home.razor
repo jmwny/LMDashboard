@@ -5,7 +5,7 @@
 
 <PageTitle>LM Dashboard</PageTitle>
 
-<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "") @(_glitchActive ? "crt-glitch" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "") @(_glitchActive ? "crt-glitch" : "") @(_readableFont ? "readable-font" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
     <div class="lm-glitch-bar"></div>
     <div class="lm-glitch-flash"></div>
     <div class="lm-header">LM DASHBOARD</div>
@@ -170,6 +170,7 @@
                        @oninput="OnBrightnessChanged" />
                 <span class="lm-brightness-value">@_brightness.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
             </span>
+            <button class="lm-btn @(_readableFont ? "lm-btn-active" : "")" @onclick="ToggleFont">[FONT]</button>
             <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
             <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
             <button class="lm-btn @(_glitch ? "lm-btn-active" : "")" @onclick="ToggleGlitch">[GLITCH]</button>
@@ -199,6 +200,7 @@
     private bool _scanlines = true;
     private bool _vignette = true;
     private bool _glitch = true;
+    private bool _readableFont;
     private double _brightness = 1.0;
     private int _glitchMin = 30;
     private int _glitchMax = 180;
@@ -264,6 +266,7 @@
         _scanlines = prefs.Scanlines;
         _vignette = prefs.Vignette;
         _glitch = prefs.Glitch;
+        _readableFont = prefs.ReadableFont;
         _showFailingOnly = prefs.ShowFailingOnly;
         _brightness = prefs.Brightness;
         _glitchMin = prefs.GlitchMinSeconds;
@@ -336,6 +339,12 @@
     private void OnAnimTimingChanged()
     {
         if (_glitch) ScheduleGlitchTimer();
+        PersistPreferences();
+    }
+
+    private void ToggleFont()
+    {
+        _readableFont = !_readableFont;
         PersistPreferences();
     }
 
@@ -489,6 +498,7 @@
             Scanlines = _scanlines,
             Vignette = _vignette,
             Glitch = _glitch,
+            ReadableFont = _readableFont,
             ShowFailingOnly = _showFailingOnly,
             Brightness = _brightness,
             GlitchMinSeconds = _glitchMin,

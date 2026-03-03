@@ -7,5 +7,6 @@
   "Glitch": true,
   "Brightness": 1,
   "GlitchMinSeconds": 5,
-  "GlitchMaxSeconds": 10
+  "GlitchMaxSeconds": 10,
+  "ReadableFont": true
 }
