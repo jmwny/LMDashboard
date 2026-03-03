@@ -8,10 +8,7 @@ public class DashboardPreferences
     public bool Vignette { get; set; } = true;
     public bool ShowFailingOnly { get; set; }
     public bool Glitch { get; set; } = true;
-    public bool Matrix { get; set; } = true;
     public double Brightness { get; set; } = 1.0;
     public int GlitchMinSeconds { get; set; } = 30;
     public int GlitchMaxSeconds { get; set; } = 180;
-    public int MatrixMinSeconds { get; set; } = 30;
-    public int MatrixMaxSeconds { get; set; } = 180;
 }
