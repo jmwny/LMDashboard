@@ -173,34 +173,17 @@
             <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
             <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
             <button class="lm-btn @(_glitch ? "lm-btn-active" : "")" @onclick="ToggleGlitch">[GLITCH]</button>
-            <button class="lm-btn @(_matrix ? "lm-btn-active" : "")" @onclick="ToggleMatrix">[MATRIX]</button>
-        </span>
-    </div>
-    @if (_glitch || _matrix)
-    {
-        <div class="lm-anim-config">
             @if (_glitch)
             {
                 <span class="lm-anim-group">
-                    <span class="lm-anim-label">GLITCH:</span>
                     <input class="lm-input lm-input-xs" type="number" min="1" @bind="_glitchMin" @bind:after="OnAnimTimingChanged" />
                     <span>–</span>
                     <input class="lm-input lm-input-xs" type="number" min="2" @bind="_glitchMax" @bind:after="OnAnimTimingChanged" />
                     <span class="lm-anim-unit">sec</span>
                 </span>
             }
-            @if (_matrix)
-            {
-                <span class="lm-anim-group">
-                    <span class="lm-anim-label">MATRIX:</span>
-                    <input class="lm-input lm-input-xs" type="number" min="1" @bind="_matrixMin" @bind:after="OnAnimTimingChanged" />
-                    <span>–</span>
-                    <input class="lm-input lm-input-xs" type="number" min="2" @bind="_matrixMax" @bind:after="OnAnimTimingChanged" />
-                    <span class="lm-anim-unit">sec</span>
-                </span>
-            }
-        </div>
-    }
+        </span>
+    </div>
 </div>
 
 @code {
@@ -216,22 +199,12 @@
     private bool _scanlines = true;
     private bool _vignette = true;
     private bool _glitch = true;
-    private bool _matrix = true;
     private double _brightness = 1.0;
     private int _glitchMin = 30;
     private int _glitchMax = 180;
-    private int _matrixMin = 30;
-    private int _matrixMax = 180;
     private bool _glitchActive;
     private System.Threading.Timer? _glitchTimer;
     private System.Threading.Timer? _glitchOffTimer;
-    private System.Threading.Timer? _matrixTimer;
-    private System.Threading.Timer? _matrixStepTimer;
-    private Guid? _matrixTargetId;
-    private string? _matrixText;
-    private string? _matrixOriginal;
-    private int _matrixRevealIndex;
-    private static readonly string _glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*!?+=<>{}[]|/~^";
 
     private enum LinkFilter { All, Internal, External }
 
@@ -241,7 +214,7 @@
             <a class="lm-entry-link" href="@link.Url" target="_blank" rel="noopener">
                 <span class="lm-entry-row1">
                     <span class="lm-ref">[@idx]</span>
-                    <span class="lm-name @(_matrixTargetId == link.Id ? "lm-matrix-scramble" : "")">@(_matrixTargetId == link.Id && _matrixText is not null ? _matrixText : link.Name)</span>
+                    <span class="lm-name">@link.Name</span>
                     @if (showType)
                     {
                         <span class="lm-type">@(link.IsExternal ? "EXT" : "INT")</span>
@@ -291,18 +264,13 @@
         _scanlines = prefs.Scanlines;
         _vignette = prefs.Vignette;
         _glitch = prefs.Glitch;
-        _matrix = prefs.Matrix;
         _showFailingOnly = prefs.ShowFailingOnly;
         _brightness = prefs.Brightness;
         _glitchMin = prefs.GlitchMinSeconds;
         _glitchMax = prefs.GlitchMaxSeconds;
-        _matrixMin = prefs.MatrixMinSeconds;
-        _matrixMax = prefs.MatrixMaxSeconds;
         RefreshLinks();
         if (_glitch)
             ScheduleGlitchTimer();
-        if (_matrix)
-            ScheduleMatrixTimer();
     }
 
     private void HandleStoreChange()
@@ -368,7 +336,6 @@
     private void OnAnimTimingChanged()
     {
         if (_glitch) ScheduleGlitchTimer();
-        if (_matrix) ScheduleMatrixTimer();
         PersistPreferences();
     }
 
@@ -391,16 +358,6 @@
             ScheduleGlitchTimer();
         else
             StopGlitchTimers();
-        PersistPreferences();
-    }
-
-    private void ToggleMatrix()
-    {
-        _matrix = !_matrix;
-        if (_matrix)
-            ScheduleMatrixTimer();
-        else
-            StopMatrixTimers();
         PersistPreferences();
     }
 
@@ -433,86 +390,11 @@
         }, null, TimeSpan.FromMilliseconds(1500), Timeout.InfiniteTimeSpan);
     }
 
-    private void ScheduleMatrixTimer()
-    {
-        _matrixTimer?.Dispose();
-        if (!_matrix) return;
-        var min = Math.Max(1, _matrixMin);
-        var max = Math.Max(min + 1, _matrixMax);
-        var delay = TimeSpan.FromSeconds(Random.Shared.Next(min, max));
-        _matrixTimer = new System.Threading.Timer(OnMatrixTick, null, delay, Timeout.InfiniteTimeSpan);
-    }
-
-    private void OnMatrixTick(object? state)
-    {
-        InvokeAsync(() =>
-        {
-            if (_filtered.Count == 0)
-            {
-                ScheduleMatrixTimer();
-                return;
-            }
-            var target = _filtered[Random.Shared.Next(_filtered.Count)];
-            _matrixTargetId = target.Id;
-            _matrixOriginal = target.Name;
-            _matrixRevealIndex = -8;
-            _matrixText = ScrambleString(_matrixOriginal, 0);
-            StateHasChanged();
-            _matrixStepTimer?.Dispose();
-            _matrixStepTimer = new System.Threading.Timer(OnMatrixStep, null, TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(50));
-        });
-    }
-
-    private void OnMatrixStep(object? state)
-    {
-        InvokeAsync(() =>
-        {
-            if (_matrixOriginal is null)
-            {
-                _matrixStepTimer?.Dispose();
-                return;
-            }
-            _matrixRevealIndex++;
-            if (_matrixRevealIndex >= _matrixOriginal.Length)
-            {
-                _matrixStepTimer?.Dispose();
-                _matrixTargetId = null;
-                _matrixText = null;
-                _matrixOriginal = null;
-                StateHasChanged();
-                ScheduleMatrixTimer();
-                return;
-            }
-            _matrixText = ScrambleString(_matrixOriginal, Math.Max(0, _matrixRevealIndex));
-            StateHasChanged();
-        });
-    }
-
-    private static string ScrambleString(string original, int revealCount)
-    {
-        var chars = original.ToCharArray();
-        for (var i = revealCount; i < chars.Length; i++)
-        {
-            if (chars[i] == ' ') continue;
-            chars[i] = _glitchChars[Random.Shared.Next(_glitchChars.Length)];
-        }
-        return new string(chars);
-    }
-
     private void StopGlitchTimers()
     {
         _glitchTimer?.Dispose();
         _glitchOffTimer?.Dispose();
         _glitchActive = false;
-    }
-
-    private void StopMatrixTimers()
-    {
-        _matrixTimer?.Dispose();
-        _matrixStepTimer?.Dispose();
-        _matrixTargetId = null;
-        _matrixText = null;
-        _matrixOriginal = null;
     }
 
     private void OnBrightnessChanged(ChangeEventArgs e)
@@ -607,13 +489,10 @@
             Scanlines = _scanlines,
             Vignette = _vignette,
             Glitch = _glitch,
-            Matrix = _matrix,
             ShowFailingOnly = _showFailingOnly,
             Brightness = _brightness,
             GlitchMinSeconds = _glitchMin,
-            GlitchMaxSeconds = _glitchMax,
-            MatrixMinSeconds = _matrixMin,
-            MatrixMaxSeconds = _matrixMax
+            GlitchMaxSeconds = _glitchMax
         });
     }
 
@@ -677,6 +556,5 @@
     {
         Store.OnChange -= HandleStoreChange;
         StopGlitchTimers();
-        StopMatrixTimers();
     }
 }

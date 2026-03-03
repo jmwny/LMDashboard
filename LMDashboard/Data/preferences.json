@@ -5,10 +5,7 @@
   "Vignette": true,
   "ShowFailingOnly": false,
   "Glitch": true,
-  "Matrix": true,
   "Brightness": 1,
   "GlitchMinSeconds": 5,
-  "GlitchMaxSeconds": 10,
-  "MatrixMinSeconds": 5,
-  "MatrixMaxSeconds": 10
+  "GlitchMaxSeconds": 10
 }
