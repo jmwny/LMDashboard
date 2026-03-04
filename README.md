@@ -2,7 +2,7 @@
 
 A locally hosted web link organizer and uptime monitor with a line-mode terminal aesthetic — Blazor Server, .NET 10.
 
-<img width="980" height="565" alt="image" src="https://github.com/user-attachments/assets/50306f87-b4ba-486f-a840-398068fb297f" />
+<img width="935" height="648" alt="image" src="https://github.com/user-attachments/assets/cab1f75c-bbae-4a86-a9d3-796eec75e6e5" />
 
 ---
 
