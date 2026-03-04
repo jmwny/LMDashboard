@@ -1,11 +1,32 @@
-The inspiration for this primarily comes from stumbling across a simulation of the first line mode browser at <https://line-mode.cern.ch/www/hypertext/WWW/TheProject.html>, and this brought back a lot of memories!  My dad used to work for IBM back in the day on System/370 mainframe's as a COBOL programmer.  When I was much younger, he'd take me into the office on weekends and I'd sit and play Trek for hours on end... and get myself into trouble de-spooling random magnetic tape reels... but anyway.
+# LM Dashboard
 
-I've also been wanting to write my own locally hosted web link organizer as a start page.  I've been putting this off for quite some time as other projects just always seemed to take higher precedence.
+A locally hosted web link organizer and uptime monitor with a line-mode terminal aesthetic — Blazor Server, .NET 10.
 
-The idea to combine the two is more than likely the result of nostalgia.  Things just felt so new and fanciful back then... and I miss my dad.  I miss those times we spent together in that cold, air-conditioned room, with the hum of electronics and blinking lights.
+<img width="980" height="565" alt="image" src="https://github.com/user-attachments/assets/50306f87-b4ba-486f-a840-398068fb297f" />
 
-I really don't expect anyone to actually use this other than myself, and the rendering of how those old displays actually looked is far from true (colors?  only if it's green!).  I suppose it's really just a way to hold on to a little bit of something from decades past.
+---
+
+## Background
+
+The inspiration for this primarily comes from stumbling across a simulation of the first line-mode browser at [line-mode.cern.ch](https://line-mode.cern.ch/www/hypertext/WWW/TheProject.html), and this brought back a lot of memories.
+
+My dad used to work for IBM back in the day on System/370 mainframes as a COBOL programmer. When I was much younger, he'd take me into the office on weekends and I'd sit and play Trek for hours on end... and get myself into trouble de-spooling random magnetic tape reels... but anyway.
+
+I've also been wanting to write my own locally hosted web link organizer as a start page. I've been putting this off for quite some time as other projects just always seemed to take higher precedence.
+
+The idea to combine the two is more than likely the result of nostalgia. Things just felt so new and fanciful back then... and I miss my dad. I miss those times we spent together in that cold, air-conditioned room while blowing up Klingons.
+
+I really don't expect anyone to actually use this other than myself, and the rendering of how those old displays actually looked is far from true (colors? only if it's green!). I suppose it's really just a way to hold on to a little bit of something from decades past.
 
 I'm not really sure how much further I'm going to take this project as it fits my needs for the time being.
 
-<img width="822" height="488" alt="Screenshot 2026-03-02 142751" src="https://github.com/user-attachments/assets/dc735a22-a626-4ae0-b44c-8d068abf9bc8" />
+---
+
+## What it does
+
+- **Link Management** — Add, edit and delete URLs with classification type (Internal / External).
+- **Monitoring** — "Ping's" each link on a configurable interval and displays live HTTP status codes with response times.
+- **Status Summary** — Displays combined OK FAIL REDIR PINGING WAITING states.
+- **Filtering and Search** — Filters by type, grouped view, failing links, and text search by name or URL.
+- **Effects** — Scanlines, vignette and randomized power surge/brownout animation with configurable timing.
+- **Brightness Control** — Slider to dial in the phosphor brightness.
