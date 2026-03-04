@@ -30,3 +30,36 @@ I'm not really sure how much further I'm going to take this project as it fits m
 - **Filtering and Search** — Filters by type, grouped view, failing links, and text search by name or URL.
 - **Effects** — Scanlines, vignette and randomized power surge/brownout animation with configurable timing.
 - **Brightness Control** — Slider to dial in the phosphor brightness.
+
+## Install
+
+Here is the services file that I'm using; configure as needed and replace [XXX] with your system/install specific values. I also wouldn't expose this externally as it was written as an internal only tool.
+
+```
+[Unit]
+Description=LMDashboard - Web Link Organizer
+After=network.target
+
+[Service]
+WorkingDirectory=[INSTALL/BINARY DIR]
+ExecStart=/usr/share/dotnet/dotnet [INSTALL/BINARY DIR]/LMDashboard.dll
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=lmdashboard
+User=[USER]
+Group=[GROUP]
+
+# Environment
+# Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+Environment=DOTNET_ROOT=/usr/share/dotnet
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
