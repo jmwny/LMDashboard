@@ -5,7 +5,7 @@
 
 <PageTitle>LM Dashboard</PageTitle>
 
-<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "") @(_glitchActive ? "crt-glitch" : "") @(_readableFont ? "readable-font" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "") @(_glitchActive ? "crt-glitch" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
     <div class="lm-glitch-bar"></div>
     <div class="lm-glitch-flash"></div>
     <div class="lm-header">LM DASHBOARD</div>
@@ -106,21 +106,6 @@
     </div>
     <div class="lm-divider"></div>
 
-    @if (_pendingDeleteId is not null)
-    {
-        var target = _links.Find(l => l.Id == _pendingDeleteId);
-        if (target is not null)
-        {
-            <div class="lm-confirm">
-                <span>Delete</span>
-                <span class="lm-confirm-name">"@target.Name"</span>
-                <span>?</span>
-                <button class="lm-btn lm-btn-danger" @onclick="ConfirmDelete">[YES]</button>
-                <button class="lm-btn" @onclick="CancelDelete">[NO]</button>
-            </div>
-        }
-    }
-
     @if (_filtered.Count == 0)
     {
         <div class="lm-empty">@(_links.Count == 0 ? "No links configured. Press [ADD NEW] to begin." : _showFailingOnly ? "All links are healthy." : "No links match the current filter.")</div>
@@ -170,7 +155,6 @@
                        @oninput="OnBrightnessChanged" />
                 <span class="lm-brightness-value">@_brightness.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
             </span>
-            <button class="lm-btn @(_readableFont ? "lm-btn-active" : "")" @onclick="ToggleFont">[FONT]</button>
             <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
             <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
             <button class="lm-btn @(_glitch ? "lm-btn-active" : "")" @onclick="ToggleGlitch">[GLITCH]</button>
@@ -200,7 +184,6 @@
     private bool _scanlines = true;
     private bool _vignette = true;
     private bool _glitch = true;
-    private bool _readableFont;
     private double _brightness = 1.0;
     private int _glitchMin = 30;
     private int _glitchMax = 180;
@@ -212,48 +195,60 @@
 
     private RenderFragment RenderEntry(SiteLink link, int idx, bool showType) => __builder =>
     {
-        <div class="lm-entry @(!link.PingEnabled ? "lm-entry-ping-disabled" : "")">
-            <a class="lm-entry-link" href="@link.Url" target="_blank" rel="noopener">
-                <span class="lm-entry-row1">
-                    <span class="lm-ref">[@idx]</span>
-                    <span class="lm-name">@link.Name</span>
-                    @if (showType)
-                    {
-                        <span class="lm-type">@(link.IsExternal ? "EXT" : "INT")</span>
-                    }
-                    <span class="lm-status-cell">
-                        @if (!link.PingEnabled)
+        <div class="lm-entry-wrapper">
+            <div class="lm-entry @(!link.PingEnabled ? "lm-entry-ping-disabled" : "")">
+                <a class="lm-entry-link" href="@link.Url" target="_blank" rel="noopener">
+                    <span class="lm-entry-row1">
+                        <span class="lm-ref">[@idx]</span>
+                        <span class="lm-name">@link.Name</span>
+                        @if (showType)
                         {
-                            <span class="lm-status-pending">■ DISABLED</span>
+                            <span class="lm-type">@(link.IsExternal ? "EXT" : "INT")</span>
                         }
-                        else if (link.IsPinging)
-                        {
-                            <span class="lm-status-pending">■ PINGING...</span>
-                        }
-                        else if (link.LastChecked is not null)
-                        {
-                            <span class="@GetStatusClass(link.LastStatusCode)">■ @GetStatusDisplay(link.LastStatusCode, link.LastStatusDescription)</span>
-                        }
-                        else
-                        {
-                            <span class="lm-status-pending">■ WAITING</span>
-                        }
+                        <span class="lm-status-cell">
+                            @if (!link.PingEnabled)
+                            {
+                                <span class="lm-status-pending">■ DISABLED</span>
+                            }
+                            else if (link.IsPinging)
+                            {
+                                <span class="lm-status-pending">■ PINGING...</span>
+                            }
+                            else if (link.LastChecked is not null)
+                            {
+                                <span class="@GetStatusClass(link.LastStatusCode)">■ @GetStatusDisplay(link.LastStatusCode, link.LastStatusDescription)</span>
+                            }
+                            else
+                            {
+                                <span class="lm-status-pending">■ WAITING</span>
+                            }
+                        </span>
+                        <span class="lm-ping-time">
+                            @if (link.LastPingMs is not null)
+                            {
+                                @($"{link.LastPingMs}ms")
+                            }
+                        </span>
+                        <span class="lm-entry-sep">│</span>
+                        <span class="lm-interval">@FormatInterval(link.PingIntervalSeconds)</span>
                     </span>
-                    <span class="lm-ping-time">
-                        @if (link.LastPingMs is not null)
-                        {
-                            @($"{link.LastPingMs}ms")
-                        }
-                    </span>
-                    <span class="lm-entry-sep">│</span>
-                    <span class="lm-interval">@FormatInterval(link.PingIntervalSeconds)</span>
+                </a>
+                <span class="lm-actions">
+                    <button class="lm-btn @(link.PingEnabled ? "" : "lm-btn-danger")" @onclick="() => TogglePing(link.Id)">@(link.PingEnabled ? "[PING]" : "[OFF]")</button>
+                    <button class="lm-btn" @onclick="() => EditLink(link)">[EDIT]</button>
+                    <button class="lm-btn lm-btn-danger" @onclick="() => RequestDelete(link.Id)">[DEL]</button>
                 </span>
-            </a>
-            <span class="lm-actions">
-                <button class="lm-btn @(link.PingEnabled ? "" : "lm-btn-danger")" @onclick="() => TogglePing(link.Id)">@(link.PingEnabled ? "[PING]" : "[OFF]")</button>
-                <button class="lm-btn" @onclick="() => EditLink(link)">[EDIT]</button>
-                <button class="lm-btn lm-btn-danger" @onclick="() => RequestDelete(link.Id)">[DEL]</button>
-            </span>
+            </div>
+            @if (_pendingDeleteId == link.Id)
+            {
+                <div class="lm-confirm">
+                    <span>Delete</span>
+                    <span class="lm-confirm-name">"@link.Name"</span>
+                    <span>?</span>
+                    <button class="lm-btn lm-btn-danger" @onclick="ConfirmDelete">[YES]</button>
+                    <button class="lm-btn" @onclick="CancelDelete">[NO]</button>
+                </div>
+            }
         </div>
     };
 
@@ -266,7 +261,6 @@
         _scanlines = prefs.Scanlines;
         _vignette = prefs.Vignette;
         _glitch = prefs.Glitch;
-        _readableFont = prefs.ReadableFont;
         _showFailingOnly = prefs.ShowFailingOnly;
         _brightness = prefs.Brightness;
         _glitchMin = prefs.GlitchMinSeconds;
@@ -339,12 +333,6 @@
     private void OnAnimTimingChanged()
     {
         if (_glitch) ScheduleGlitchTimer();
-        PersistPreferences();
-    }
-
-    private void ToggleFont()
-    {
-        _readableFont = !_readableFont;
         PersistPreferences();
     }
 
@@ -498,7 +486,6 @@
             Scanlines = _scanlines,
             Vignette = _vignette,
             Glitch = _glitch,
-            ReadableFont = _readableFont,
             ShowFailingOnly = _showFailingOnly,
             Brightness = _brightness,
             GlitchMinSeconds = _glitchMin,
