@@ -11,5 +11,4 @@ public class DashboardPreferences
     public double Brightness { get; set; } = 1.0;
     public int GlitchMinSeconds { get; set; } = 30;
     public int GlitchMaxSeconds { get; set; } = 180;
-    public bool ReadableFont { get; set; }
 }
