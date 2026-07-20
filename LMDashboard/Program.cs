@@ -8,15 +8,23 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddSingleton<LinkStore>();
-builder.Services.AddHttpClient("Ping", client =>
+
+static void ConfigurePingClient(HttpClient client)
 {
     client.Timeout = TimeSpan.FromSeconds(10);
     client.DefaultRequestHeaders.UserAgent.ParseAdd("LMDashboard/1.0");
-})
-.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-{
-    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-});
+}
+
+// Internal hosts often run self-signed certs, so validation is skipped there.
+builder.Services.AddHttpClient("PingInternal", ConfigurePingClient)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    });
+
+// External links keep full certificate validation so cert problems surface as failures.
+builder.Services.AddHttpClient("PingExternal", ConfigurePingClient);
+
 builder.Services.AddHostedService<PingService>();
 
 var app = builder.Build();
@@ -25,11 +33,8 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 

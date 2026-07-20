@@ -25,4 +25,6 @@ public class SiteLink
 
     [JsonIgnore]
     public bool IsPinging { get; set; }
+
+    public SiteLink Clone() => (SiteLink)MemberwiseClone();
 }

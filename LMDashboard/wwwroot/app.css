@@ -1,4 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+/* Self-hosted Inter (variable, latin subset) — no external font dependency */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('fonts/inter-latin.woff2') format('woff2');
+}
 
 *,
 *::before,
@@ -393,7 +400,12 @@ html, body {
 .lm-form-actions {
     margin-top: 0.15rem;
     display: flex;
+    align-items: baseline;
     gap: 1ch;
+}
+
+.lm-form-error {
+    color: #ff4444;
 }
 
 .lm-empty {
@@ -500,24 +512,10 @@ html, body {
     margin: 0;
 }
 
-/* Animation config row */
-.lm-anim-config {
-    display: flex;
-    gap: 3ch;
-    align-items: center;
-    justify-content: flex-end;
-    color: var(--lm-fg-dim);
-    padding: 0.1rem 0;
-}
-
 .lm-anim-group {
     display: flex;
     align-items: center;
     gap: 0.5ch;
-}
-
-.lm-anim-label {
-    color: var(--lm-fg-dim);
 }
 
 .lm-anim-unit {

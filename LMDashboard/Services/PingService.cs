@@ -12,7 +12,7 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             var links = store.Links;
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
 
             foreach (var link in links)
             {
@@ -25,18 +25,20 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
                 if (needsPing)
                 {
                     store.SetPinging(link.Id);
-                    _ = PingAsync(link.Id, link.Url, stoppingToken);
+                    _ = PingAsync(link.Id, link.Url, link.IsExternal, stoppingToken);
                 }
             }
         }
     }
 
-    private async Task PingAsync(Guid id, string url, CancellationToken ct)
+    private async Task PingAsync(Guid id, string url, bool isExternal, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         try
         {
-            var client = httpClientFactory.CreateClient("Ping");
+            // External links get normal certificate validation so a bad cert shows up
+            // as a failure; the internal client accepts self-signed certs.
+            var client = httpClientFactory.CreateClient(isExternal ? "PingExternal" : "PingInternal");
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
             sw.Stop();
             store.UpdateStatus(id, (int)response.StatusCode, response.ReasonPhrase, sw.ElapsedMilliseconds);
@@ -45,6 +47,10 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
         {
             sw.Stop();
             store.UpdateStatus(id, null, "TIMEOUT", sw.ElapsedMilliseconds);
+        }
+        catch (OperationCanceledException)
+        {
+            // App is shutting down; nothing to record.
         }
         catch (HttpRequestException ex)
         {
