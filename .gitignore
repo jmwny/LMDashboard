@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# LMDashboard runtime data (links + preferences live here at runtime)
+LMDashboard/Data/

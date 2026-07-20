@@ -10,12 +10,14 @@ public class LinkStore
     private readonly string _filePath;
     private readonly string _prefsPath;
     private readonly object _lock = new();
+    private readonly ILogger<LinkStore> _logger;
     private List<SiteLink> _links = [];
 
     public event Action? OnChange;
 
-    public LinkStore(IWebHostEnvironment env)
+    public LinkStore(IWebHostEnvironment env, ILogger<LinkStore> logger)
     {
+        _logger = logger;
         var dataDir = Path.Combine(env.ContentRootPath, "Data");
         Directory.CreateDirectory(dataDir);
         _filePath = Path.Combine(dataDir, "links.json");
@@ -29,7 +31,7 @@ public class LinkStore
         {
             lock (_lock)
             {
-                return _links.ToList();
+                return _links.Select(l => l.Clone()).ToList();
             }
         }
     }
@@ -56,6 +58,7 @@ public class LinkStore
                 link.LastStatusDescription = _links[index].LastStatusDescription;
                 link.LastPingMs = _links[index].LastPingMs;
                 link.LastChecked = _links[index].LastChecked;
+                link.IsPinging = _links[index].IsPinging;
                 _links[index] = link;
                 Save();
                 updated = true;
@@ -80,6 +83,7 @@ public class LinkStore
 
     public void UpdateStatus(Guid id, int? statusCode, string? statusDescription, long? pingMs)
     {
+        bool found = false;
         lock (_lock)
         {
             var link = _links.Find(l => l.Id == id);
@@ -88,28 +92,34 @@ public class LinkStore
                 link.LastStatusCode = statusCode;
                 link.LastStatusDescription = statusDescription;
                 link.LastPingMs = pingMs;
-                link.LastChecked = DateTime.Now;
+                link.LastChecked = DateTime.UtcNow;
                 link.IsPinging = false;
+                found = true;
             }
         }
-        OnChange?.Invoke();
+        if (found)
+            OnChange?.Invoke();
     }
 
     public void SetPinging(Guid id)
     {
+        bool found = false;
         lock (_lock)
         {
             var link = _links.Find(l => l.Id == id);
             if (link is not null)
             {
                 link.IsPinging = true;
+                found = true;
             }
         }
-        OnChange?.Invoke();
+        if (found)
+            OnChange?.Invoke();
     }
 
     public void TogglePingEnabled(Guid id)
     {
+        bool found = false;
         lock (_lock)
         {
             var link = _links.Find(l => l.Id == id);
@@ -125,9 +135,11 @@ public class LinkStore
                     link.LastChecked = null;
                 }
                 Save();
+                found = true;
             }
         }
-        OnChange?.Invoke();
+        if (found)
+            OnChange?.Invoke();
     }
 
     public DashboardPreferences LoadPreferences()
@@ -136,8 +148,15 @@ public class LinkStore
         {
             if (File.Exists(_prefsPath))
             {
-                var json = File.ReadAllText(_prefsPath);
-                return JsonSerializer.Deserialize<DashboardPreferences>(json) ?? new();
+                try
+                {
+                    var json = File.ReadAllText(_prefsPath);
+                    return JsonSerializer.Deserialize<DashboardPreferences>(json) ?? new();
+                }
+                catch (Exception ex) when (ex is JsonException or IOException)
+                {
+                    _logger.LogWarning(ex, "Could not read {Path}; falling back to defaults", _prefsPath);
+                }
             }
             return new();
         }
@@ -148,22 +167,47 @@ public class LinkStore
         lock (_lock)
         {
             var json = JsonSerializer.Serialize(prefs, s_jsonOptions);
-            File.WriteAllText(_prefsPath, json);
+            WriteAtomic(_prefsPath, json);
         }
     }
 
     private void Load()
     {
-        if (File.Exists(_filePath))
+        if (!File.Exists(_filePath))
+            return;
+
+        try
         {
             var json = File.ReadAllText(_filePath);
             _links = JsonSerializer.Deserialize<List<SiteLink>>(json) ?? [];
+        }
+        catch (Exception ex) when (ex is JsonException or IOException)
+        {
+            // Keep the unreadable file for inspection so the next Save doesn't overwrite it.
+            var backup = _filePath + ".corrupt";
+            _logger.LogError(ex, "Could not read {Path}; moving it to {Backup} and starting empty", _filePath, backup);
+            try
+            {
+                File.Move(_filePath, backup, overwrite: true);
+            }
+            catch (IOException moveEx)
+            {
+                _logger.LogWarning(moveEx, "Could not move corrupt file {Path}", _filePath);
+            }
+            _links = [];
         }
     }
 
     private void Save()
     {
         var json = JsonSerializer.Serialize(_links, s_jsonOptions);
-        File.WriteAllText(_filePath, json);
+        WriteAtomic(_filePath, json);
+    }
+
+    private static void WriteAtomic(string path, string contents)
+    {
+        var tmp = path + ".tmp";
+        File.WriteAllText(tmp, contents);
+        File.Move(tmp, path, overwrite: true);
     }
 }
