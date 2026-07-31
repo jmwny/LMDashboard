@@ -5,8 +5,8 @@
 
 <PageTitle>LM Dashboard</PageTitle>
 
-<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
-    <div class="lm-header">LM DASHBOARD</div>
+<div class="lm-dashboard @ThemeClass @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+    <div class="lm-header">LM DASHBOARD<span class="lm-cursor" aria-hidden="true"></span></div>
 
     @{
         var (okCount, warnCount, failCount, waitCount, pingCount) = GetStatusSummary();
@@ -14,15 +14,15 @@
     <div class="lm-summary">
         <span class="lm-summary-left">
             <span class="lm-summary-label">STATUS:</span>
-            <span class="lm-status-ok">@okCount OK</span>
+            <span class="lm-status-ok">■ @okCount OK</span>
             <span class="lm-summary-sep">·</span>
-            <span class="lm-status-error">@failCount FAIL</span>
+            <span class="lm-status-error">✖ @failCount FAIL</span>
             <span class="lm-summary-sep">·</span>
-            <span class="lm-status-redirect">@warnCount REDIR</span>
+            <span class="lm-status-redirect">▲ @warnCount REDIR</span>
             <span class="lm-summary-sep">·</span>
-            <span class="lm-status-pending">@pingCount PING</span>
+            <span class="lm-status-pending">► @pingCount PING</span>
             <span class="lm-summary-sep">·</span>
-            <span class="lm-status-pending">@waitCount WAIT</span>
+            <span class="lm-status-pending">□ @waitCount WAIT</span>
         </span>
         <span class="lm-search">
             <label class="lm-search-label" for="lm-search-input">FIND:</label>
@@ -110,7 +110,20 @@
 
     @if (_filtered.Count == 0)
     {
-        <div class="lm-empty">@(_links.Count == 0 ? "No links configured. Press [ADD NEW] to begin." : _showFailingOnly ? "All links are healthy." : "No links match the current filter.")</div>
+        @if (_links.Count == 0)
+        {
+            <pre class="lm-empty-art">
++----------------------------+
+|   LINK DIRECTORY : EMPTY   |
++----------------------------+
+
+  > PRESS [ADD NEW] TO BEGIN<span class="lm-cursor" aria-hidden="true"></span>
+</pre>
+        }
+        else
+        {
+            <div class="lm-empty">@(_showFailingOnly ? "All links are healthy." : "No links match the current filter.")</div>
+        }
     }
     else if (_filter == LinkFilter.All && _grouped)
     {
@@ -159,6 +172,7 @@
             </span>
             <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
             <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
+            <button class="lm-btn" title="Cycle theme" @onclick="CycleTheme">[@_theme.ToString().ToUpperInvariant()]</button>
         </span>
     </div>
 </div>
@@ -177,8 +191,18 @@
     private bool _scanlines = true;
     private bool _vignette = true;
     private double _brightness = 1.0;
+    private Theme _theme = Theme.Green;
 
     private enum LinkFilter { All, Internal, External }
+
+    private enum Theme { Green, Amber, Paper }
+
+    private string ThemeClass => _theme switch
+    {
+        Theme.Amber => "theme-amber",
+        Theme.Paper => "theme-paper",
+        _ => ""
+    };
 
     private RenderFragment RenderEntry(SiteLink link, int idx, bool showType) => __builder =>
     {
@@ -195,22 +219,22 @@
                         <span class="lm-status-cell">
                             @if (!link.PingEnabled)
                             {
-                                <span class="lm-status-pending">■ DISABLED</span>
+                                <span class="lm-status-pending">□ DISABLED</span>
                             }
                             else if (link.IsPinging)
                             {
-                                <span class="lm-status-pending">■ PINGING...</span>
+                                <span class="lm-status-pending">► PINGING...</span>
                             }
                             else if (link.LastChecked is not null)
                             {
-                                <span class="@GetStatusClass(link.LastStatusCode)">■ @GetStatusDisplay(link.LastStatusCode, link.LastStatusDescription)</span>
+                                <span class="@GetStatusClass(link.LastStatusCode)">@GetStatusGlyph(link.LastStatusCode) @GetStatusDisplay(link.LastStatusCode, link.LastStatusDescription)</span>
                             }
                             else
                             {
-                                <span class="lm-status-pending">■ WAITING</span>
+                                <span class="lm-status-pending">□ WAITING</span>
                             }
                         </span>
-                        <span class="lm-ping-time">
+                        <span class="lm-ping-time @GetPingSpeedClass(link.LastPingMs)">
                             @if (link.LastPingMs is not null)
                             {
                                 @($"{link.LastPingMs}ms")
@@ -250,6 +274,7 @@
     private void ApplyPreferences(DashboardPreferences prefs)
     {
         _filter = Enum.TryParse<LinkFilter>(prefs.Filter, out var f) ? f : LinkFilter.All;
+        _theme = Enum.TryParse<Theme>(prefs.Theme, out var t) ? t : Theme.Green;
         _grouped = prefs.Grouped;
         _scanlines = prefs.Scanlines;
         _vignette = prefs.Vignette;
@@ -339,6 +364,17 @@
     private void ToggleVignette()
     {
         _vignette = !_vignette;
+        PersistPreferences();
+    }
+
+    private void CycleTheme()
+    {
+        _theme = _theme switch
+        {
+            Theme.Green => Theme.Amber,
+            Theme.Amber => Theme.Paper,
+            _ => Theme.Green
+        };
         PersistPreferences();
     }
 
@@ -461,6 +497,7 @@
         Store.SavePreferences(new DashboardPreferences
         {
             Filter = _filter.ToString(),
+            Theme = _theme.ToString(),
             Grouped = _grouped,
             Scanlines = _scanlines,
             Vignette = _vignette,
@@ -479,6 +516,21 @@
         >= 400 and < 500 => "lm-status-client-err",
         >= 500           => "lm-status-server-err",
         _                => "lm-status-error"
+    };
+
+    // Shape-coded so states are distinguishable without relying on color alone.
+    private static string GetStatusGlyph(int? statusCode) => statusCode switch
+    {
+        >= 200 and < 300 => "■",
+        >= 300 and < 400 => "▲",
+        _                => "✖"
+    };
+
+    private static string GetPingSpeedClass(long? ms) => ms switch
+    {
+        >= 500 => "lm-ping-slow",
+        >= 100 => "lm-ping-medium",
+        _      => ""
     };
 
     private static string GetStatusDisplay(int? statusCode, string? description)
