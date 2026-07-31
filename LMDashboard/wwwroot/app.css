@@ -62,7 +62,6 @@ body {
     --lm-fg-bright: #88ff88;
     --lm-fg-dim: #555555;
     --lm-accent: #33aaff;
-    --lm-accent-bright: #88ddff;
     --lm-border: #1a6a1a;
     --lm-border-dim: #143a14;
     --lm-ref: #ffff33;
@@ -81,7 +80,6 @@ body {
     --lm-fg-bright: #ffd75f;
     --lm-fg-dim: #7d6224;
     --lm-accent: #ffcc66;
-    --lm-accent-bright: #ffe3a0;
     --lm-border: #7a5410;
     --lm-border-dim: #3d2a08;
     --lm-ref: #ffe14a;
@@ -100,7 +98,6 @@ body {
     --lm-fg-bright: #000000;
     --lm-fg-dim: #8f8a7a;
     --lm-accent: #1a5fa8;
-    --lm-accent-bright: #0d3f78;
     --lm-border: #a9a390;
     --lm-border-dim: #d5d0c0;
     --lm-ref: #8a5a00;
@@ -163,7 +160,7 @@ body {
     border-radius: inherit;
 }
 
-/* Header */
+/* Header — an h1 for semantics and FocusOnNavigate, styled as plain text */
 .lm-header {
     text-align: center;
     border-top: 3px double var(--lm-fg);
@@ -171,6 +168,12 @@ body {
     padding: 0.15rem 0;
     letter-spacing: 0.2em;
     margin: 0;
+    font-size: inherit;
+    font-weight: normal;
+}
+
+.lm-header:focus {
+    outline: none;
 }
 
 /* Summary bar */
@@ -258,9 +261,6 @@ body {
     padding: 0.1rem 0;
 }
 
-/* Inverse-video hover — classic terminal selection (defined near the end of
-   this file so it overrides the per-element status/button colors) */
-
 .lm-entry-ping-disabled .lm-status-cell,
 .lm-entry-ping-disabled .lm-ping-time {
     opacity: 0.45;
@@ -275,7 +275,6 @@ body {
     text-decoration: none;
     color: inherit;
 }
-
 
 /* Row 1: ref  name  type  status  ping-time  interval  actions */
 .lm-entry-row1 {
@@ -648,8 +647,7 @@ body {
     background-color: var(--lm-fg);
 }
 
-.lm-entry:hover *,
-.lm-entry:hover .lm-btn {
+.lm-entry:hover * {
     color: var(--lm-bg);
     text-shadow: none;
 }
