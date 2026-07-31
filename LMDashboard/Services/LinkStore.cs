@@ -12,8 +12,10 @@ public class LinkStore
     private readonly object _lock = new();
     private readonly ILogger<LinkStore> _logger;
     private List<SiteLink> _links = [];
+    private DashboardPreferences _prefs = new();
 
     public event Action? OnChange;
+    public event Action? OnPreferencesChange;
 
     public LinkStore(IWebHostEnvironment env, ILogger<LinkStore> logger)
     {
@@ -23,6 +25,7 @@ public class LinkStore
         _filePath = Path.Combine(dataDir, "links.json");
         _prefsPath = Path.Combine(dataDir, "preferences.json");
         Load();
+        LoadPrefs();
     }
 
     public IReadOnlyList<SiteLink> Links
@@ -46,7 +49,7 @@ public class LinkStore
         OnChange?.Invoke();
     }
 
-    public void Update(SiteLink link)
+    public bool Update(SiteLink link)
     {
         bool updated = false;
         lock (_lock)
@@ -59,6 +62,7 @@ public class LinkStore
                 link.LastPingMs = _links[index].LastPingMs;
                 link.LastChecked = _links[index].LastChecked;
                 link.IsPinging = _links[index].IsPinging;
+                link.LastPingStarted = _links[index].LastPingStarted;
                 _links[index] = link;
                 Save();
                 updated = true;
@@ -66,6 +70,7 @@ public class LinkStore
         }
         if (updated)
             OnChange?.Invoke();
+        return updated;
     }
 
     public void Remove(Guid id)
@@ -110,6 +115,7 @@ public class LinkStore
             if (link is not null)
             {
                 link.IsPinging = true;
+                link.LastPingStarted = DateTime.UtcNow;
                 found = true;
             }
         }
@@ -133,6 +139,7 @@ public class LinkStore
                     link.LastStatusDescription = null;
                     link.LastPingMs = null;
                     link.LastChecked = null;
+                    link.LastPingStarted = null;
                 }
                 Save();
                 found = true;
@@ -146,19 +153,7 @@ public class LinkStore
     {
         lock (_lock)
         {
-            if (File.Exists(_prefsPath))
-            {
-                try
-                {
-                    var json = File.ReadAllText(_prefsPath);
-                    return JsonSerializer.Deserialize<DashboardPreferences>(json) ?? new();
-                }
-                catch (Exception ex) when (ex is JsonException or IOException)
-                {
-                    _logger.LogWarning(ex, "Could not read {Path}; falling back to defaults", _prefsPath);
-                }
-            }
-            return new();
+            return _prefs.Clone();
         }
     }
 
@@ -166,8 +161,27 @@ public class LinkStore
     {
         lock (_lock)
         {
-            var json = JsonSerializer.Serialize(prefs, s_jsonOptions);
+            _prefs = prefs.Clone();
+            var json = JsonSerializer.Serialize(_prefs, s_jsonOptions);
             WriteAtomic(_prefsPath, json);
+        }
+        OnPreferencesChange?.Invoke();
+    }
+
+    private void LoadPrefs()
+    {
+        if (!File.Exists(_prefsPath))
+            return;
+
+        try
+        {
+            var json = File.ReadAllText(_prefsPath);
+            _prefs = JsonSerializer.Deserialize<DashboardPreferences>(json) ?? new();
+        }
+        catch (Exception ex) when (ex is JsonException or IOException)
+        {
+            _logger.LogWarning(ex, "Could not read {Path}; falling back to defaults", _prefsPath);
+            _prefs = new();
         }
     }
 

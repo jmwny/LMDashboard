@@ -26,5 +26,10 @@ public class SiteLink
     [JsonIgnore]
     public bool IsPinging { get; set; }
 
+    // When the last ping started; scheduling keys off this rather than
+    // LastChecked (completion time) so slow pings don't stretch the interval.
+    [JsonIgnore]
+    public DateTime? LastPingStarted { get; set; }
+
     public SiteLink Clone() => (SiteLink)MemberwiseClone();
 }
