@@ -318,16 +318,20 @@ body {
     white-space: nowrap;
 }
 
+/* Fixed width so the columns to the right stay put; rare long
+   statuses ellipsize instead of pushing the row out of alignment */
 .lm-status-cell {
     flex-shrink: 0;
     white-space: nowrap;
-    min-width: 20ch;
+    width: 25ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .lm-ping-time {
     color: var(--lm-fg-dim);
     flex-shrink: 0;
-    min-width: 6ch;
+    min-width: 8ch;
     text-align: right;
 }
 
@@ -366,6 +370,14 @@ body {
 
 .lm-btn-danger        { color: var(--lm-danger); }
 .lm-btn-danger:hover  { color: var(--lm-danger-bright); }
+
+/* [PING] and [OFF] differ in length; a fixed width keeps the
+   columns to their left from shifting on disabled rows */
+.lm-btn-toggle {
+    display: inline-block;
+    width: 7ch;
+    text-align: left;
+}
 
 .lm-btn-active {
     color: var(--lm-bg);
@@ -677,6 +689,7 @@ body {
     .lm-status-cell,
     .lm-ping-time,
     .lm-interval {
+        width: auto;
         min-width: 0;
         text-align: left;
     }
