@@ -27,8 +27,8 @@
             <span class="lm-status-pending">@waitCount WAIT</span>
         </span>
         <span class="lm-search">
-            <span class="lm-search-label">FIND:</span>
-            <input class="lm-input lm-search-input" placeholder="search..." @bind="_searchTerm" @bind:event="oninput" @bind:after="ApplyFilter" />
+            <label class="lm-search-label" for="lm-search-input">FIND:</label>
+            <input id="lm-search-input" class="lm-input lm-search-input" placeholder="search..." @bind="_searchTerm" @bind:event="oninput" @bind:after="ApplyFilter" />
             @if (!string.IsNullOrEmpty(_searchTerm))
             {
                 <button class="lm-btn" @onclick="ClearSearch">[X]</button>
@@ -193,6 +193,7 @@
     private int _glitchMin = 30;
     private int _glitchMax = 180;
     private bool _glitchActive;
+    private bool _disposed;
     private System.Threading.Timer? _glitchTimer;
     private System.Threading.Timer? _glitchOffTimer;
 
@@ -260,7 +261,15 @@
     protected override void OnInitialized()
     {
         Store.OnChange += HandleStoreChange;
-        var prefs = Store.LoadPreferences();
+        Store.OnPreferencesChange += HandlePreferencesChange;
+        ApplyPreferences(Store.LoadPreferences());
+        RefreshLinks();
+        if (_glitch)
+            ScheduleGlitchTimer();
+    }
+
+    private void ApplyPreferences(DashboardPreferences prefs)
+    {
         _filter = Enum.TryParse<LinkFilter>(prefs.Filter, out var f) ? f : LinkFilter.All;
         _grouped = prefs.Grouped;
         _scanlines = prefs.Scanlines;
@@ -270,9 +279,6 @@
         _brightness = prefs.Brightness;
         _glitchMin = prefs.GlitchMinSeconds;
         _glitchMax = prefs.GlitchMaxSeconds;
-        RefreshLinks();
-        if (_glitch)
-            ScheduleGlitchTimer();
     }
 
     private void HandleStoreChange()
@@ -280,6 +286,28 @@
         InvokeAsync(() =>
         {
             RefreshLinks();
+            StateHasChanged();
+        });
+    }
+
+    // Keeps other circuits (browser tabs) in sync when one of them saves preferences.
+    private void HandlePreferencesChange()
+    {
+        InvokeAsync(() =>
+        {
+            var prefs = Store.LoadPreferences();
+            var glitchChanged = prefs.Glitch != _glitch
+                || prefs.GlitchMinSeconds != _glitchMin
+                || prefs.GlitchMaxSeconds != _glitchMax;
+            ApplyPreferences(prefs);
+            if (glitchChanged)
+            {
+                if (_glitch)
+                    ScheduleGlitchTimer();
+                else
+                    StopGlitchTimers();
+            }
+            ApplyFilter();
             StateHasChanged();
         });
     }
@@ -299,8 +327,10 @@
             _ => _links
         };
 
+        // Failing means a completed check outside 2xx/3xx; redirects count as REDIR
+        // in the summary, so they are not treated as failures here either.
         if (_showFailingOnly)
-            result = result.Where(l => l.LastChecked is not null && l.LastStatusCode is not (>= 200 and < 300));
+            result = result.Where(l => l.LastChecked is not null && l.LastStatusCode is not (>= 200 and < 400));
 
         if (!string.IsNullOrWhiteSpace(_searchTerm))
             result = result.Where(l => l.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
@@ -366,25 +396,30 @@
     private void ScheduleGlitchTimer()
     {
         _glitchTimer?.Dispose();
-        if (!_glitch) return;
+        _glitchTimer = null;
+        if (_disposed || !_glitch) return;
         var min = Math.Max(1, _glitchMin);
         var max = Math.Max(min + 1, _glitchMax);
-        var delay = TimeSpan.FromSeconds(Random.Shared.Next(min, max));
+        var delay = TimeSpan.FromSeconds(Random.Shared.Next(min, max + 1));
         _glitchTimer = new System.Threading.Timer(OnGlitchTick, null, delay, Timeout.InfiniteTimeSpan);
     }
 
     private void OnGlitchTick(object? state)
     {
+        if (_disposed) return;
         InvokeAsync(() =>
         {
+            if (_disposed) return;
             _glitchActive = true;
             StateHasChanged();
         });
         _glitchOffTimer?.Dispose();
         _glitchOffTimer = new System.Threading.Timer(_ =>
         {
+            if (_disposed) return;
             InvokeAsync(() =>
             {
+                if (_disposed) return;
                 _glitchActive = false;
                 StateHasChanged();
                 ScheduleGlitchTimer();
@@ -395,7 +430,9 @@
     private void StopGlitchTimers()
     {
         _glitchTimer?.Dispose();
+        _glitchTimer = null;
         _glitchOffTimer?.Dispose();
+        _glitchOffTimer = null;
         _glitchActive = false;
     }
 
@@ -470,9 +507,14 @@
         _editing.PingIntervalSeconds = Math.Max(1, _editing.PingIntervalSeconds);
 
         if (_isNew)
+        {
             Store.Add(_editing);
-        else
-            Store.Update(_editing);
+        }
+        else if (!Store.Update(_editing))
+        {
+            _formError = "LINK NO LONGER EXISTS";
+            return;
+        }
 
         _editing = null;
         _isNew = false;
@@ -571,6 +613,7 @@
         int ok = 0, warn = 0, fail = 0, waiting = 0, pinging = 0;
         foreach (var l in _links)
         {
+            if (!l.PingEnabled) continue;
             if (l.IsPinging) pinging++;
             else if (l.LastChecked is null) waiting++;
             else if (l.LastStatusCode is >= 200 and < 300) ok++;
@@ -582,7 +625,9 @@
 
     public void Dispose()
     {
+        _disposed = true;
         Store.OnChange -= HandleStoreChange;
+        Store.OnPreferencesChange -= HandlePreferencesChange;
         StopGlitchTimers();
     }
 }

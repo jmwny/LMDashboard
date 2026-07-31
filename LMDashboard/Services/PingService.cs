@@ -19,8 +19,8 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
                 if (!link.PingEnabled || link.IsPinging)
                     continue;
 
-                var needsPing = link.LastChecked is null
-                    || (now - link.LastChecked.Value).TotalSeconds >= link.PingIntervalSeconds;
+                var needsPing = link.LastPingStarted is null
+                    || (now - link.LastPingStarted.Value).TotalSeconds >= link.PingIntervalSeconds;
 
                 if (needsPing)
                 {
