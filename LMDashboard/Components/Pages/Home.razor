@@ -255,7 +255,7 @@
                     </span>
                 </a>
                 <span class="lm-actions">
-                    <button class="lm-btn @(link.PingEnabled ? "" : "lm-btn-danger")" @onclick="() => TogglePing(link.Id)">@(link.PingEnabled ? "[PING]" : "[OFF]")</button>
+                    <button class="lm-btn lm-btn-toggle @(link.PingEnabled ? "" : "lm-btn-danger")" @onclick="() => TogglePing(link.Id)">@(link.PingEnabled ? "[PING]" : "[OFF]")</button>
                     <button class="lm-btn" @onclick="() => EditLink(link)">[EDIT]</button>
                     <button class="lm-btn lm-btn-danger" @onclick="() => RequestDelete(link.Id)">[DEL]</button>
                 </span>
@@ -563,7 +563,7 @@
             405 => "Method Not Allowed",
             408 => "Request Timeout",
             429 => "Too Many Requests",
-            500 => "Internal Server Error",
+            500 => "Server Error",
             502 => "Bad Gateway",
             503 => "Service Unavailable",
             504 => "Gateway Timeout",
