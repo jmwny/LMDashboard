@@ -1,12 +1,13 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 @implements IDisposable
+@using System.Globalization
 @inject LinkStore Store
 
 <PageTitle>LM Dashboard</PageTitle>
 
-<div class="lm-dashboard @ThemeClass @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
-    <div class="lm-header">LM DASHBOARD<span class="lm-cursor" aria-hidden="true"></span></div>
+<div class="@DashboardClasses" style="filter: brightness(@_brightness.ToString(CultureInfo.InvariantCulture))">
+    <h1 class="lm-header" tabindex="-1">LM DASHBOARD<span class="lm-cursor" aria-hidden="true"></span></h1>
 
     @{
         var (okCount, warnCount, failCount, waitCount, pingCount) = GetStatusSummary();
@@ -166,9 +167,9 @@
             <span class="lm-brightness">
                 <span class="lm-brightness-label">BRT:</span>
                 <input type="range" class="lm-brightness-slider" min="0.1" max="1.5" step="0.05"
-                       value="@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                       value="@_brightness.ToString(CultureInfo.InvariantCulture)"
                        @oninput="OnBrightnessChanged" @onchange="OnBrightnessCommitted" />
-                <span class="lm-brightness-value">@_brightness.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
+                <span class="lm-brightness-value">@_brightness.ToString("0.00", CultureInfo.InvariantCulture)</span>
             </span>
             <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
             <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
@@ -203,6 +204,15 @@
         Theme.Paper => "theme-paper",
         _ => ""
     };
+
+    private string DashboardClasses => string.Join(" ",
+        new[]
+        {
+            "lm-dashboard",
+            ThemeClass,
+            _scanlines ? "crt-scanlines" : "",
+            _vignette ? "crt-vignette" : ""
+        }.Where(c => c.Length > 0));
 
     private RenderFragment RenderEntry(SiteLink link, int idx, bool showType) => __builder =>
     {
@@ -380,7 +390,7 @@
 
     private void OnBrightnessChanged(ChangeEventArgs e)
     {
-        if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var val))
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var val))
         {
             _brightness = val;
         }
