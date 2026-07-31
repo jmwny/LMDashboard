@@ -28,7 +28,7 @@ I'm not really sure how much further I'm going to take this project as it fits m
 - **Monitoring** — "Ping's" each link on a configurable interval and displays live HTTP status codes with response times.
 - **Status Summary** — Displays combined OK FAIL REDIR PINGING WAITING states.
 - **Filtering and Search** — Filters by type, grouped view, failing links, and text search by name or URL.
-- **Effects** — Scanlines, vignette and randomized power surge/brownout animation with configurable timing.
+- **Effects** — Scanlines and vignette.
 - **Brightness Control** — Slider to dial in the phosphor brightness.
 
 ## Install
