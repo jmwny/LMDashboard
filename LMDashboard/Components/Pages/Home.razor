@@ -5,9 +5,7 @@
 
 <PageTitle>LM Dashboard</PageTitle>
 
-<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "") @(_glitchActive ? "crt-glitch" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
-    <div class="lm-glitch-bar"></div>
-    <div class="lm-glitch-flash"></div>
+<div class="lm-dashboard @(_scanlines ? "crt-scanlines" : "") @(_vignette ? "crt-vignette" : "")" style="filter: brightness(@_brightness.ToString(System.Globalization.CultureInfo.InvariantCulture))">
     <div class="lm-header">LM DASHBOARD</div>
 
     @{
@@ -161,16 +159,6 @@
             </span>
             <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
             <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
-            <button class="lm-btn @(_glitch ? "lm-btn-active" : "")" @onclick="ToggleGlitch">[GLITCH]</button>
-            @if (_glitch)
-            {
-                <span class="lm-anim-group">
-                    <input class="lm-input lm-input-xs" type="number" min="1" @bind="_glitchMin" @bind:after="OnAnimTimingChanged" />
-                    <span>–</span>
-                    <input class="lm-input lm-input-xs" type="number" min="2" @bind="_glitchMax" @bind:after="OnAnimTimingChanged" />
-                    <span class="lm-anim-unit">sec</span>
-                </span>
-            }
         </span>
     </div>
 </div>
@@ -188,14 +176,7 @@
     private Guid? _pendingDeleteId;
     private bool _scanlines = true;
     private bool _vignette = true;
-    private bool _glitch = true;
     private double _brightness = 1.0;
-    private int _glitchMin = 30;
-    private int _glitchMax = 180;
-    private bool _glitchActive;
-    private bool _disposed;
-    private System.Threading.Timer? _glitchTimer;
-    private System.Threading.Timer? _glitchOffTimer;
 
     private enum LinkFilter { All, Internal, External }
 
@@ -264,8 +245,6 @@
         Store.OnPreferencesChange += HandlePreferencesChange;
         ApplyPreferences(Store.LoadPreferences());
         RefreshLinks();
-        if (_glitch)
-            ScheduleGlitchTimer();
     }
 
     private void ApplyPreferences(DashboardPreferences prefs)
@@ -274,11 +253,8 @@
         _grouped = prefs.Grouped;
         _scanlines = prefs.Scanlines;
         _vignette = prefs.Vignette;
-        _glitch = prefs.Glitch;
         _showFailingOnly = prefs.ShowFailingOnly;
         _brightness = prefs.Brightness;
-        _glitchMin = prefs.GlitchMinSeconds;
-        _glitchMax = prefs.GlitchMaxSeconds;
     }
 
     private void HandleStoreChange()
@@ -295,18 +271,7 @@
     {
         InvokeAsync(() =>
         {
-            var prefs = Store.LoadPreferences();
-            var glitchChanged = prefs.Glitch != _glitch
-                || prefs.GlitchMinSeconds != _glitchMin
-                || prefs.GlitchMaxSeconds != _glitchMax;
-            ApplyPreferences(prefs);
-            if (glitchChanged)
-            {
-                if (_glitch)
-                    ScheduleGlitchTimer();
-                else
-                    StopGlitchTimers();
-            }
+            ApplyPreferences(Store.LoadPreferences());
             ApplyFilter();
             StateHasChanged();
         });
@@ -365,12 +330,6 @@
         ApplyFilter();
     }
 
-    private void OnAnimTimingChanged()
-    {
-        if (_glitch) ScheduleGlitchTimer();
-        PersistPreferences();
-    }
-
     private void ToggleScanlines()
     {
         _scanlines = !_scanlines;
@@ -381,59 +340,6 @@
     {
         _vignette = !_vignette;
         PersistPreferences();
-    }
-
-    private void ToggleGlitch()
-    {
-        _glitch = !_glitch;
-        if (_glitch)
-            ScheduleGlitchTimer();
-        else
-            StopGlitchTimers();
-        PersistPreferences();
-    }
-
-    private void ScheduleGlitchTimer()
-    {
-        _glitchTimer?.Dispose();
-        _glitchTimer = null;
-        if (_disposed || !_glitch) return;
-        var min = Math.Max(1, _glitchMin);
-        var max = Math.Max(min + 1, _glitchMax);
-        var delay = TimeSpan.FromSeconds(Random.Shared.Next(min, max + 1));
-        _glitchTimer = new System.Threading.Timer(OnGlitchTick, null, delay, Timeout.InfiniteTimeSpan);
-    }
-
-    private void OnGlitchTick(object? state)
-    {
-        if (_disposed) return;
-        InvokeAsync(() =>
-        {
-            if (_disposed) return;
-            _glitchActive = true;
-            StateHasChanged();
-        });
-        _glitchOffTimer?.Dispose();
-        _glitchOffTimer = new System.Threading.Timer(_ =>
-        {
-            if (_disposed) return;
-            InvokeAsync(() =>
-            {
-                if (_disposed) return;
-                _glitchActive = false;
-                StateHasChanged();
-                ScheduleGlitchTimer();
-            });
-        }, null, TimeSpan.FromMilliseconds(1500), Timeout.InfiniteTimeSpan);
-    }
-
-    private void StopGlitchTimers()
-    {
-        _glitchTimer?.Dispose();
-        _glitchTimer = null;
-        _glitchOffTimer?.Dispose();
-        _glitchOffTimer = null;
-        _glitchActive = false;
     }
 
     private void OnBrightnessChanged(ChangeEventArgs e)
@@ -558,11 +464,8 @@
             Grouped = _grouped,
             Scanlines = _scanlines,
             Vignette = _vignette,
-            Glitch = _glitch,
             ShowFailingOnly = _showFailingOnly,
-            Brightness = _brightness,
-            GlitchMinSeconds = _glitchMin,
-            GlitchMaxSeconds = _glitchMax
+            Brightness = _brightness
         });
     }
 
@@ -625,9 +528,7 @@
 
     public void Dispose()
     {
-        _disposed = true;
         Store.OnChange -= HandleStoreChange;
         Store.OnPreferencesChange -= HandlePreferencesChange;
-        StopGlitchTimers();
     }
 }
