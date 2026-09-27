@@ -704,8 +704,9 @@ html:has(.lm-dialog[open]) {
     white-space: nowrap;
 }
 
+/* Wide enough for the longest standard status, "503 Service Unavailable" */
 .lm-row-status {
-    width: 11.5rem;
+    width: 13rem;
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--fg-muted);
@@ -739,6 +740,11 @@ html:has(.lm-dialog[open]) {
     display: flex;
     flex-shrink: 0;
     gap: 2px;
+}
+
+/* Pause and Resume differ in width; a fixed width keeps paused rows' columns in line */
+.lm-row-actions .lm-btn:first-child {
+    min-width: 64px;
 }
 
 .lm-row-confirm {

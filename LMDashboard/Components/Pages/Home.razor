@@ -41,7 +41,7 @@
             </div>
 
             <button class="lm-btn lm-chip" aria-pressed="@Pressed(_grouped && _filter == LinkFilter.All)" disabled="@(_filter != LinkFilter.All)"
-                    title="@(_filter == LinkFilter.All ? "Group by type" : "Grouping applies to All")" @onclick="ToggleGrouped">Group</button>
+                    title="@(_filter == LinkFilter.All ? "Group by type" : "Switch to All to group by type")" @onclick="ToggleGrouped">Group</button>
             <button class="lm-btn lm-chip lm-chip-danger" aria-pressed="@Pressed(_showFailingOnly)" @onclick="ToggleFailing">Failing only</button>
 
             <span class="lm-toolbar-spacer"></span>
@@ -350,7 +350,7 @@
         if (!Uri.TryCreate(_editing.Url, UriKind.Absolute, out var uri)
             || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
-            _formError = "URL must start with http:// or https://.";
+            _formError = "Only http:// and https:// URLs are supported.";
             return;
         }
 
