@@ -35,6 +35,14 @@
         </span>
     </div>
 
+    @if (_storeError is not null)
+    {
+        <div class="lm-form-error" role="alert">
+            ! @_storeError
+            <button class="lm-btn" @onclick="() => _storeError = null">[X]</button>
+        </div>
+    }
+
     @if (_editing is not null)
     {
         <div class="lm-divider"></div>
@@ -184,6 +192,7 @@
     private SiteLink? _editing;
     private bool _isNew;
     private string? _formError;
+    private string? _storeError;
     private LinkFilter _filter = LinkFilter.All;
     private bool _grouped;
     private bool _showFailingOnly;
@@ -193,6 +202,10 @@
     private bool _vignette = true;
     private double _brightness = 1.0;
     private Theme _theme = Theme.Green;
+
+    // Matches the slider's min/max; anything the client sends is clamped to this range.
+    private const double MinBrightness = 0.1;
+    private const double MaxBrightness = 1.5;
 
     private enum LinkFilter { All, Internal, External }
 
@@ -289,8 +302,11 @@
         _scanlines = prefs.Scanlines;
         _vignette = prefs.Vignette;
         _showFailingOnly = prefs.ShowFailingOnly;
-        _brightness = prefs.Brightness;
+        _brightness = ClampBrightness(prefs.Brightness);
     }
+
+    private static double ClampBrightness(double value) =>
+        double.IsFinite(value) ? Math.Clamp(value, MinBrightness, MaxBrightness) : 1.0;
 
     private void HandleStoreChange()
     {
@@ -390,9 +406,10 @@
 
     private void OnBrightnessChanged(ChangeEventArgs e)
     {
-        if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var val))
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var val)
+            && double.IsFinite(val))
         {
-            _brightness = val;
+            _brightness = ClampBrightness(val);
         }
     }
 
@@ -458,11 +475,20 @@
 
         _editing.PingIntervalSeconds = Math.Max(1, _editing.PingIntervalSeconds);
 
-        if (_isNew)
+        var link = _editing;
+        var found = true;
+        var saved = TryStore(() =>
         {
-            Store.Add(_editing);
-        }
-        else if (!Store.Update(_editing))
+            if (_isNew)
+                Store.Add(link);
+            else
+                found = Store.Update(link);
+        });
+
+        if (!saved)
+            return;
+
+        if (!found)
         {
             _formError = "LINK NO LONGER EXISTS";
             return;
@@ -489,7 +515,9 @@
             var id = _pendingDeleteId.Value;
             _pendingDeleteId = null;
 
-            Store.Remove(id);
+            if (!TryStore(() => Store.Remove(id)))
+                return;
+
             if (_editing is not null && _editing.Id == id)
             {
                 _editing = null;
@@ -500,11 +528,11 @@
 
     private void CancelDelete() => _pendingDeleteId = null;
 
-    private void TogglePing(Guid id) => Store.TogglePingEnabled(id);
+    private void TogglePing(Guid id) => TryStore(() => Store.TogglePingEnabled(id));
 
     private void PersistPreferences()
     {
-        Store.SavePreferences(new DashboardPreferences
+        var prefs = new DashboardPreferences
         {
             Filter = _filter.ToString(),
             Theme = _theme.ToString(),
@@ -513,7 +541,25 @@
             Vignette = _vignette,
             ShowFailingOnly = _showFailingOnly,
             Brightness = _brightness
-        });
+        };
+        TryStore(() => Store.SavePreferences(prefs));
+    }
+
+    // A failed write (disk full, file locked by a sync client) leaves the store unchanged;
+    // report it here rather than letting the exception end the circuit.
+    private bool TryStore(Action write)
+    {
+        try
+        {
+            write();
+            _storeError = null;
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _storeError = "COULD NOT SAVE CHANGES (SEE SERVER LOG)";
+            return false;
+        }
     }
 
     private static string FormatInterval(int seconds) =>

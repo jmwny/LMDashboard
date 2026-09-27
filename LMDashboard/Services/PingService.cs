@@ -22,16 +22,15 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
                 var needsPing = link.LastPingStarted is null
                     || (now - link.LastPingStarted.Value).TotalSeconds >= link.PingIntervalSeconds;
 
-                if (needsPing)
+                if (needsPing && store.TryStartPing(link.Id) is { } pingId)
                 {
-                    store.SetPinging(link.Id);
-                    _ = PingAsync(link.Id, link.Url, link.IsExternal, stoppingToken);
+                    _ = PingAsync(link.Id, pingId, link.Url, link.IsExternal, stoppingToken);
                 }
             }
         }
     }
 
-    private async Task PingAsync(Guid id, string url, bool isExternal, CancellationToken ct)
+    private async Task PingAsync(Guid id, long pingId, string url, bool isExternal, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         try
@@ -41,12 +40,12 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
             var client = httpClientFactory.CreateClient(isExternal ? "PingExternal" : "PingInternal");
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
             sw.Stop();
-            store.UpdateStatus(id, (int)response.StatusCode, response.ReasonPhrase, sw.ElapsedMilliseconds);
+            store.UpdateStatus(id, pingId, (int)response.StatusCode, response.ReasonPhrase, sw.ElapsedMilliseconds);
         }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {
             sw.Stop();
-            store.UpdateStatus(id, null, "TIMEOUT", sw.ElapsedMilliseconds);
+            store.UpdateStatus(id, pingId, null, "TIMEOUT", sw.ElapsedMilliseconds);
         }
         catch (OperationCanceledException)
         {
@@ -56,13 +55,13 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
         {
             sw.Stop();
             logger.LogWarning(ex, "Failed to ping {Url}", url);
-            store.UpdateStatus(id, null, "UNREACHABLE", sw.ElapsedMilliseconds);
+            store.UpdateStatus(id, pingId, null, "UNREACHABLE", sw.ElapsedMilliseconds);
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
         {
             sw.Stop();
             logger.LogError(ex, "Unexpected error pinging {Url}", url);
-            store.UpdateStatus(id, null, "ERROR", sw.ElapsedMilliseconds);
+            store.UpdateStatus(id, pingId, null, "ERROR", sw.ElapsedMilliseconds);
         }
     }
 }

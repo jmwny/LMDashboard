@@ -3,6 +3,8 @@ using LMDashboard.Models;
 
 namespace LMDashboard.Services;
 
+// Mutations build the new state, write it to disk, and only then swap it in, so a failed
+// write (IOException/UnauthorizedAccessException, rethrown to the caller) changes nothing.
 public class LinkStore
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new() { WriteIndented = true };
@@ -13,6 +15,7 @@ public class LinkStore
     private readonly ILogger<LinkStore> _logger;
     private List<SiteLink> _links = [];
     private DashboardPreferences _prefs = new();
+    private long _lastPingId;
 
     public event Action? OnChange;
     public event Action? OnPreferencesChange;
@@ -43,56 +46,95 @@ public class LinkStore
     {
         lock (_lock)
         {
-            _links.Add(link);
-            Save();
+            var links = new List<SiteLink>(_links) { link.Clone() };
+            SaveLinks(links);
+            _links = links;
         }
         OnChange?.Invoke();
     }
 
     public bool Update(SiteLink link)
     {
-        bool updated = false;
         lock (_lock)
         {
             var index = _links.FindIndex(l => l.Id == link.Id);
-            if (index >= 0)
+            if (index < 0)
+                return false;
+
+            var existing = _links[index];
+            var updated = link.Clone();
+
+            // Keep the live status only when the check itself is unchanged; otherwise start
+            // fresh so a ping still in flight against the old target is ignored.
+            if (updated.PingEnabled && existing.PingEnabled
+                && updated.Url == existing.Url && updated.IsExternal == existing.IsExternal)
             {
-                link.LastStatusCode = _links[index].LastStatusCode;
-                link.LastStatusDescription = _links[index].LastStatusDescription;
-                link.LastPingMs = _links[index].LastPingMs;
-                link.LastChecked = _links[index].LastChecked;
-                link.IsPinging = _links[index].IsPinging;
-                link.LastPingStarted = _links[index].LastPingStarted;
-                _links[index] = link;
-                Save();
-                updated = true;
+                updated.LastStatusCode = existing.LastStatusCode;
+                updated.LastStatusDescription = existing.LastStatusDescription;
+                updated.LastPingMs = existing.LastPingMs;
+                updated.LastChecked = existing.LastChecked;
+                updated.IsPinging = existing.IsPinging;
+                updated.LastPingStarted = existing.LastPingStarted;
+                updated.PingId = existing.PingId;
             }
+            else
+            {
+                ResetPingState(updated);
+            }
+
+            var links = new List<SiteLink>(_links);
+            links[index] = updated;
+            SaveLinks(links);
+            _links = links;
         }
-        if (updated)
-            OnChange?.Invoke();
-        return updated;
+        OnChange?.Invoke();
+        return true;
     }
 
     public void Remove(Guid id)
     {
-        bool removed = false;
         lock (_lock)
         {
-            removed = _links.RemoveAll(l => l.Id == id) > 0;
-            if (removed)
-                Save();
+            var links = _links.Where(l => l.Id != id).ToList();
+            if (links.Count == _links.Count)
+                return;
+
+            SaveLinks(links);
+            _links = links;
         }
-        if (removed)
-            OnChange?.Invoke();
+        OnChange?.Invoke();
     }
 
-    public void UpdateStatus(Guid id, int? statusCode, string? statusDescription, long? pingMs)
+    // Returns an id for the new ping, or null if the link is gone, disabled or already
+    // being pinged. Re-checked here because the caller's snapshot may be stale.
+    public long? TryStartPing(Guid id)
+    {
+        long? pingId = null;
+        lock (_lock)
+        {
+            var link = _links.Find(l => l.Id == id);
+            if (link is { PingEnabled: true, IsPinging: false })
+            {
+                pingId = ++_lastPingId;
+                link.PingId = pingId.Value;
+                link.IsPinging = true;
+                link.LastPingStarted = DateTime.UtcNow;
+            }
+        }
+        if (pingId is not null)
+            OnChange?.Invoke();
+        return pingId;
+    }
+
+    public void UpdateStatus(Guid id, long pingId, int? statusCode, string? statusDescription, long? pingMs)
     {
         bool found = false;
         lock (_lock)
         {
             var link = _links.Find(l => l.Id == id);
-            if (link is not null)
+
+            // Drop results from a ping that was superseded by a disable or an edit.
+            if (link is not null && link.IsPinging && link.PingId == pingId)
             {
                 link.LastStatusCode = statusCode;
                 link.LastStatusDescription = statusDescription;
@@ -106,47 +148,25 @@ public class LinkStore
             OnChange?.Invoke();
     }
 
-    public void SetPinging(Guid id)
-    {
-        bool found = false;
-        lock (_lock)
-        {
-            var link = _links.Find(l => l.Id == id);
-            if (link is not null)
-            {
-                link.IsPinging = true;
-                link.LastPingStarted = DateTime.UtcNow;
-                found = true;
-            }
-        }
-        if (found)
-            OnChange?.Invoke();
-    }
-
     public void TogglePingEnabled(Guid id)
     {
-        bool found = false;
         lock (_lock)
         {
-            var link = _links.Find(l => l.Id == id);
-            if (link is not null)
-            {
-                link.PingEnabled = !link.PingEnabled;
-                if (!link.PingEnabled)
-                {
-                    link.IsPinging = false;
-                    link.LastStatusCode = null;
-                    link.LastStatusDescription = null;
-                    link.LastPingMs = null;
-                    link.LastChecked = null;
-                    link.LastPingStarted = null;
-                }
-                Save();
-                found = true;
-            }
+            var index = _links.FindIndex(l => l.Id == id);
+            if (index < 0)
+                return;
+
+            var link = _links[index].Clone();
+            link.PingEnabled = !link.PingEnabled;
+            if (!link.PingEnabled)
+                ResetPingState(link);
+
+            var links = new List<SiteLink>(_links);
+            links[index] = link;
+            SaveLinks(links);
+            _links = links;
         }
-        if (found)
-            OnChange?.Invoke();
+        OnChange?.Invoke();
     }
 
     public DashboardPreferences LoadPreferences()
@@ -161,11 +181,22 @@ public class LinkStore
     {
         lock (_lock)
         {
-            _prefs = prefs.Clone();
-            var json = JsonSerializer.Serialize(_prefs, s_jsonOptions);
-            WriteAtomic(_prefsPath, json);
+            var copy = prefs.Clone();
+            Write(_prefsPath, JsonSerializer.Serialize(copy, s_jsonOptions));
+            _prefs = copy;
         }
         OnPreferencesChange?.Invoke();
+    }
+
+    private static void ResetPingState(SiteLink link)
+    {
+        link.IsPinging = false;
+        link.PingId = 0;
+        link.LastStatusCode = null;
+        link.LastStatusDescription = null;
+        link.LastPingMs = null;
+        link.LastChecked = null;
+        link.LastPingStarted = null;
     }
 
     private void LoadPrefs()
@@ -212,10 +243,20 @@ public class LinkStore
         }
     }
 
-    private void Save()
+    private void SaveLinks(List<SiteLink> links) =>
+        Write(_filePath, JsonSerializer.Serialize(links, s_jsonOptions));
+
+    private void Write(string path, string contents)
     {
-        var json = JsonSerializer.Serialize(_links, s_jsonOptions);
-        WriteAtomic(_filePath, json);
+        try
+        {
+            WriteAtomic(path, contents);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogError(ex, "Could not save {Path}", path);
+            throw;
+        }
     }
 
     private static void WriteAtomic(string path, string contents)

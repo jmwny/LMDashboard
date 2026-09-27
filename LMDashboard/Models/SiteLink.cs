@@ -31,5 +31,9 @@ public class SiteLink
     [JsonIgnore]
     public DateTime? LastPingStarted { get; set; }
 
+    // Identifies the ping in flight; a result is only recorded if this still matches.
+    [JsonIgnore]
+    public long PingId { get; set; }
+
     public SiteLink Clone() => (SiteLink)MemberwiseClone();
 }
