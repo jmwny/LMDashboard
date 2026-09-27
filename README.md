@@ -6,17 +6,17 @@ A locally hosted start page and uptime monitor for the links on your network, wi
 
 ## Background
 
-The inspiration for this primarily comes from stumbling across a simulation of the first line-mode browser at [line-mode.cern.ch](https://line-mode.cern.ch/www/hypertext/WWW/TheProject.html), and this brought back a lot of memories.
+This project started when I came across a simulation of the first line-mode browser at [line-mode.cern.ch](https://line-mode.cern.ch/www/hypertext/WWW/TheProject.html), and it brought back a lot of memories.
 
-My dad used to work for IBM back in the day on System/370 mainframes as a COBOL programmer. When I was much younger, he'd take me into the office on weekends and I'd sit and play Trek for hours on end... and get myself into trouble de-spooling random magnetic tape reels... but anyway.
+My dad worked for IBM as a COBOL programmer on System/370 mainframes. When I was much younger, he'd take me into the office on weekends. I'd sit and play Trek for hours on end, and get myself into trouble de-spooling random magnetic tape reels.
 
-I've also been wanting to write my own locally hosted web link organizer as a start page. I've been putting this off for quite some time as other projects just always seemed to take higher precedence.
+I'd also wanted to write my own locally hosted link organizer to use as a start page, but I kept putting it off because other projects always seemed to come first.
 
-The idea to combine the two is more than likely the result of nostalgia. Things just felt so new and fanciful back then... and I miss my dad. I miss those times we spent together in that cold, air-conditioned room while blowing up Klingons.
+Combining the two is more than likely nostalgia. Things felt so new and fanciful back then, and I miss my dad. I miss the times we spent together in that cold, air-conditioned room, blowing up Klingons.
 
-I really don't expect anyone to actually use this other than myself, and the rendering of how those old displays actually looked is far from true (colors? only if it's green!). I suppose it's really just a way to hold on to a little bit of something from decades past.
+The original green-screen look is still here as the Classic theme, scanlines and all. It's far from how those old displays really looked (colors? only if it's green!), and after a while I wanted something a bit more modern. The dark and light themes keep a few nods to it, like the monospace data and the blinking cursor, without the CRT effects.
 
-I'm not really sure how much further I'm going to take this project as it fits my needs for the time being.
+I don't really expect anyone other than me to use this. It's a way to hold on to a little bit of something from decades past. It fits my needs for now, and I'm not sure how much further I'll take it.
 
 ## What it does
 
@@ -111,6 +111,6 @@ sudo systemctl enable --now lmdashboard
 
 There's no login, so anyone who can reach the dashboard can add, edit, and delete links. I wrote it as an internal-only tool and wouldn't expose it to the internet.
 
-## Fonts
+## License
 
-The app bundles IBM Plex Sans and IBM Plex Mono, both under the SIL Open Font License. See [OFL.txt](LMDashboard/wwwroot/fonts/OFL.txt).
+LM Dashboard is released under the [MIT License](LICENSE). The bundled IBM Plex Sans and IBM Plex Mono fonts are under the SIL Open Font License. See [OFL.txt](LMDashboard/wwwroot/fonts/OFL.txt).
