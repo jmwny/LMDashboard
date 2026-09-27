@@ -602,7 +602,7 @@ html:has(.lm-dialog[open]) {
     flex-wrap: wrap;
     align-items: center;
     gap: 0 12px;
-    padding: 8px 8px 8px 14px;
+    padding: 4px 8px 4px 14px;
     border-top: 1px solid var(--border);
 }
 
@@ -625,9 +625,11 @@ html:has(.lm-dialog[open]) {
     border-radius: var(--radius);
 }
 
+/* Name and URL share one line; the URL gives up space first */
 .lm-row-main {
     display: flex;
-    flex-direction: column;
+    align-items: baseline;
+    gap: 10px;
     flex: 1 1 0;
     min-width: 0;
 }
@@ -640,7 +642,13 @@ html:has(.lm-dialog[open]) {
 }
 
 .lm-row-name {
+    flex-shrink: 0;
+    max-width: 60%;
     font-weight: 500;
+}
+
+.lm-row-url {
+    min-width: 0;
 }
 
 .lm-row-link:hover .lm-row-name {
@@ -1026,6 +1034,16 @@ html:has(.lm-dialog[open]) {
     .lm-spark,
     .lm-row-interval {
         display: none;
+    }
+
+    .lm-row-main {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+    }
+
+    .lm-row-name {
+        max-width: none;
     }
 
     .lm-row-status {
