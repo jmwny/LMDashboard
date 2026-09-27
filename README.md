@@ -2,7 +2,7 @@
 
 A locally hosted start page and uptime monitor for the links on your network, with a nod to old line-mode terminals. Built with Blazor Server on .NET 10.
 
-![The dashboard in its dark theme, listing internal and external links with their status, response time, and recent checks](docs/screenshot.png)
+![The dashboard in its dark theme, listing internal and external links with their status, response time, and recent checks](docs/screenshot-dark.png)
 
 ## Background
 
@@ -25,6 +25,14 @@ I don't really expect anyone other than me to use this. It's a way to hold on to
 - Shows at the top how many links are up, redirecting, down, waiting for a first check, or paused.
 - Filters by type, groups internal and external links, shows only failing links, and searches by name or URL.
 - Comes with dark, light, and Classic themes. Classic is the green-phosphor look the project started with, with optional scanlines and vignette and a brightness slider.
+
+## Themes
+
+Dark is the default. The Theme button at the bottom of the page cycles through Light and Classic.
+
+| Light | Classic |
+| --- | --- |
+| ![The dashboard in the light theme](docs/screenshot-light.png) | ![The dashboard in the Classic theme: green text on black, with scanlines and bracketed buttons](docs/screenshot-classic.png) |
 
 ## How checks work
 
