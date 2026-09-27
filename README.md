@@ -73,11 +73,39 @@ Change `Networks` to match your LAN, and add any host name you use to reach the 
 
 ## Installing on Linux
 
-The server needs the ASP.NET Core 10 runtime. Publish the app to the folder you'll run it from:
+Run one of the publish commands below from the repo folder on any machine with the .NET 10 SDK, then copy the `publish` folder to the server. That copy is the install folder the rest of this section calls `[INSTALL/BINARY DIR]`.
+
+### Option 1: .NET on the server
+
+The server needs the ASP.NET Core 10 runtime, and the app runs through `dotnet`.
 
 ```bash
-dotnet publish LMDashboard -c Release -o [INSTALL/BINARY DIR]
+dotnet publish LMDashboard -c Release -o publish
 ```
+
+The service file below is set up for this option. Its `ExecStart` uses `/usr/share/dotnet/dotnet`. Run `command -v dotnet` on the server and use that path instead if it's different. Ubuntu's own packages install it as `/usr/bin/dotnet`.
+
+### Option 2: self-contained
+
+The build includes the .NET runtime, so the server doesn't need .NET installed. Publish for the server's architecture: `linux-x64` if `uname -m` prints `x86_64`, or `linux-arm64` if it prints `aarch64`.
+
+```bash
+dotnet publish LMDashboard -c Release -r linux-x64 --self-contained -o publish
+```
+
+After copying the folder to the server, mark the program as executable. Copying from Windows drops that permission, and without it systemd fails with status `203/EXEC`.
+
+```bash
+chmod +x [INSTALL/BINARY DIR]/LMDashboard
+```
+
+In the service file, change `ExecStart` to run the program directly:
+
+```
+ExecStart=[INSTALL/BINARY DIR]/LMDashboard
+```
+
+### Service file
 
 Here's the systemd service file I use. Replace the [BRACKETED] values with ones for your system, and make sure `[USER]` can write to the install folder, since that's where the `Data` folder goes.
 
