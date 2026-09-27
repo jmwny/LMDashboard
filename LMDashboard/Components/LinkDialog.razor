@@ -1,0 +1,99 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+@* Esc raises "cancel"; so does a backdrop click (app.js). The browser is stopped from closing
+   the dialog itself: the server cancels the edit, then closes it in OnAfterRenderAsync. That
+   keeps the server the only one deciding, so a late event can't close a newer edit. *@
+<dialog @ref="_dialog" class="lm-dialog" aria-labelledby="lm-dialog-title"
+        @oncancel="OnCancel" @oncancel:preventDefault>
+    @if (Editing is not null)
+    {
+        <form class="lm-dialog-body" @onsubmit="OnSave">
+            <h2 id="lm-dialog-title" class="lm-dialog-title">@(IsNew ? "Add link" : "Edit link")</h2>
+            <div class="lm-form-grid">
+                <div class="lm-field lm-field-name">
+                    <label class="lm-field-label" for="lm-name">Name</label>
+                    <input id="lm-name" class="lm-input" @bind="Editing.Name" placeholder="Proxmox" autofocus />
+                </div>
+                <div class="lm-field lm-field-url">
+                    <label class="lm-field-label" for="lm-url">URL</label>
+                    <input id="lm-url" class="lm-input lm-mono" @bind="Editing.Url" placeholder="https://pve.lan:8006" />
+                </div>
+                @* A radiogroup rather than fieldset/legend: legends ignore flex gap, which put this
+                   control out of line with its neighbours. *@
+                <div class="lm-field" role="radiogroup" aria-labelledby="lm-type-label">
+                    <span id="lm-type-label" class="lm-field-label">Type</span>
+                    <div class="lm-segmented">
+                        <label class="lm-seg @(Editing.IsExternal ? "" : "is-on")">
+                            <input type="radio" name="lm-link-type" class="sr-only" checked="@(!Editing.IsExternal)"
+                                   @onchange="() => SetExternal(false)" />Internal
+                        </label>
+                        <label class="lm-seg @(Editing.IsExternal ? "is-on" : "")">
+                            <input type="radio" name="lm-link-type" class="sr-only" checked="@Editing.IsExternal"
+                                   @onchange="() => SetExternal(true)" />External
+                        </label>
+                    </div>
+                </div>
+                <div class="lm-field">
+                    <label class="lm-field-label" for="lm-interval">Check every</label>
+                    <span class="lm-inline">
+                        <input id="lm-interval" class="lm-input lm-input-sm" type="number" min="1" @bind="Editing.PingIntervalSeconds" />
+                        <span class="lm-muted">seconds</span>
+                    </span>
+                </div>
+                <div class="lm-field">
+                    <span class="lm-field-label">Monitoring</span>
+                    <label class="lm-check">
+                        <input type="checkbox" @bind="Editing.PingEnabled" /> Enabled
+                    </label>
+                </div>
+            </div>
+            <div class="lm-form-actions">
+                @if (Error is not null)
+                {
+                    <span class="lm-form-error" role="alert">@Error</span>
+                }
+                <button type="button" class="lm-btn" @onclick="OnCancel">Cancel</button>
+                <button type="submit" class="lm-btn lm-btn-primary">Save</button>
+            </div>
+        </form>
+    }
+</dialog>
+
+@code {
+    // The link being added or edited; the dialog is open whenever this is set.
+    [Parameter] public SiteLink? Editing { get; set; }
+    [Parameter] public bool IsNew { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private ElementReference _dialog;
+    private bool _isOpen;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Editing is not null && !_isOpen)
+        {
+            _isOpen = true;
+            await JS.InvokeVoidAsync("lmDialog.open", _dialog);
+        }
+        else if (Editing is null && _isOpen)
+        {
+            _isOpen = false;
+            await JS.InvokeVoidAsync("lmDialog.close", _dialog);
+        }
+    }
+
+    private void SetExternal(bool isExternal)
+    {
+        if (Editing is null)
+            return;
+
+        Editing.IsExternal = isExternal;
+
+        // New links default to an interval that suits the type; edits keep what was chosen.
+        if (IsNew)
+            Editing.PingIntervalSeconds = isExternal ? 300 : 30;
+    }
+}

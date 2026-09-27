@@ -35,5 +35,16 @@ public class SiteLink
     [JsonIgnore]
     public long PingId { get; set; }
 
+    // Recent results, oldest first. Replaced rather than mutated, so the shallow
+    // Clone below can share the array safely.
+    [JsonIgnore]
+    public PingSample[] History { get; set; } = [];
+
+    // Bumped by LinkStore on every change so the UI can skip re-rendering unchanged rows.
+    [JsonIgnore]
+    public long Version { get; set; }
+
     public SiteLink Clone() => (SiteLink)MemberwiseClone();
 }
+
+public readonly record struct PingSample(long? Ms, bool Ok);

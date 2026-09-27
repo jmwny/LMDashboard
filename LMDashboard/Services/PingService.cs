@@ -45,7 +45,7 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {
             sw.Stop();
-            store.UpdateStatus(id, pingId, null, "TIMEOUT", sw.ElapsedMilliseconds);
+            store.UpdateStatus(id, pingId, null, "Timeout", sw.ElapsedMilliseconds);
         }
         catch (OperationCanceledException)
         {
@@ -55,13 +55,13 @@ public class PingService(LinkStore store, IHttpClientFactory httpClientFactory, 
         {
             sw.Stop();
             logger.LogWarning(ex, "Failed to ping {Url}", url);
-            store.UpdateStatus(id, pingId, null, "UNREACHABLE", sw.ElapsedMilliseconds);
+            store.UpdateStatus(id, pingId, null, "Unreachable", sw.ElapsedMilliseconds);
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
         {
             sw.Stop();
             logger.LogError(ex, "Unexpected error pinging {Url}", url);
-            store.UpdateStatus(id, pingId, null, "ERROR", sw.ElapsedMilliseconds);
+            store.UpdateStatus(id, pingId, null, "Error", sw.ElapsedMilliseconds);
         }
     }
 }

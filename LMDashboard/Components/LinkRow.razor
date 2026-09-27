@@ -1,0 +1,147 @@
+@* Records what this render reflects; ShouldRender compares against it. *@
+@{ _renderedKey = RenderKey; }
+<div class="lm-row @(Link.PingEnabled ? "" : "is-paused")">
+    <a class="lm-row-link" href="@Link.Url" target="_blank" rel="noopener noreferrer">
+        <span class="lm-dot @StatusKind @(Link.IsPinging ? "is-pinging" : "")" aria-hidden="true"></span>
+        <span class="lm-row-main">
+            <span class="lm-row-name">@Link.Name</span>
+            <span class="lm-row-url">@DisplayUrl</span>
+        </span>
+        @if (ShowType)
+        {
+            <span class="lm-badge">@(Link.IsExternal ? "EXT" : "INT")</span>
+        }
+        <span class="lm-spark" aria-hidden="true">
+            @{ var scale = SparkScale; }
+            @for (var i = Link.History.Length; i < SparkSlots; i++)
+            {
+                <i class="is-empty"></i>
+            }
+            @foreach (var sample in Link.History)
+            {
+                <i class="@(sample.Ok ? "" : "is-fail")" style="height: @SampleHeight(sample, scale)%"></i>
+            }
+        </span>
+        <span class="lm-row-status @StatusKind" title="@StatusText">@StatusText</span>
+        <span class="lm-row-latency @LatencyClass">@FormatLatency(Link.LastPingMs)</span>
+        <span class="lm-row-interval" title="Checked every @FormatInterval(Link.PingIntervalSeconds)">@FormatInterval(Link.PingIntervalSeconds)</span>
+    </a>
+    <span class="lm-row-actions">
+        <button class="lm-btn lm-btn-ghost lm-btn-sm" aria-label="@(Link.PingEnabled ? "Pause" : "Resume") monitoring @Link.Name"
+                @onclick="OnToggle">@(Link.PingEnabled ? "Pause" : "Resume")</button>
+        <button class="lm-btn lm-btn-ghost lm-btn-sm" aria-label="Edit @Link.Name" @onclick="OnEdit">Edit</button>
+        <button class="lm-btn lm-btn-ghost lm-btn-sm lm-btn-danger" aria-label="Delete @Link.Name" @onclick="OnRequestDelete">Delete</button>
+    </span>
+    @if (ConfirmingDelete)
+    {
+        <div class="lm-row-confirm" role="alert">
+            <span>Delete <strong>@Link.Name</strong>?</span>
+            <button class="lm-btn lm-btn-sm" @onclick="OnCancelDelete">Cancel</button>
+            <button class="lm-btn lm-btn-sm lm-btn-danger-solid" @onclick="OnConfirmDelete">Delete</button>
+        </div>
+    }
+</div>
+
+@code {
+    private const int SparkSlots = 20;
+
+    // Latency that fills the sparkline; slower pings are capped here, faster ones scale down.
+    private const double SparkFloorMs = 100;
+
+    [Parameter, EditorRequired] public SiteLink Link { get; set; } = default!;
+    [Parameter] public bool ShowType { get; set; }
+    [Parameter] public bool ConfirmingDelete { get; set; }
+    [Parameter] public EventCallback OnToggle { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnRequestDelete { get; set; }
+    [Parameter] public EventCallback OnConfirmDelete { get; set; }
+    [Parameter] public EventCallback OnCancelDelete { get; set; }
+
+    private (long Version, bool ShowType, bool ConfirmingDelete)? _renderedKey;
+
+    private (long, bool, bool) RenderKey => (Link.Version, ShowType, ConfirmingDelete);
+
+    // The parent re-renders on every store change; only rows whose link changed need to follow.
+    protected override bool ShouldRender() => _renderedKey != RenderKey;
+
+    private string StatusKind => Link switch
+    {
+        { PingEnabled: false } => "paused",
+        { LastChecked: null } => "pending",
+        { LastStatusCode: >= 200 and < 300 } => "ok",
+        { LastStatusCode: >= 300 and < 400 } => "redirect",
+        _ => "down"
+    };
+
+    private string StatusText => Link switch
+    {
+        { PingEnabled: false } => "Paused",
+        { LastChecked: null, IsPinging: true } => "Checking…",
+        { LastChecked: null } => "Waiting",
+        { LastStatusCode: null } => Link.LastStatusDescription ?? "Unknown",
+        _ => $"{Link.LastStatusCode} {StatusLabel(Link.LastStatusCode.Value, Link.LastStatusDescription)}"
+    };
+
+    private string LatencyClass => Link.LastPingMs switch
+    {
+        >= 500 => "is-slow",
+        >= 100 => "is-medium",
+        _ => ""
+    };
+
+    private string DisplayUrl => Uri.TryCreate(Link.Url, UriKind.Absolute, out var uri)
+        ? uri.Authority + (uri.PathAndQuery == "/" ? "" : uri.PathAndQuery)
+        : Link.Url;
+
+    private double SparkScale =>
+        Math.Max(SparkFloorMs, Link.History.Where(s => s.Ok).Select(s => s.Ms ?? 0).DefaultIfEmpty().Max());
+
+    private static string SampleHeight(PingSample sample, double scale)
+    {
+        if (!sample.Ok || sample.Ms is null)
+            return "100";
+
+        // Quantized to eighths so the bars step like block characters.
+        var level = Math.Clamp(Math.Ceiling(sample.Ms.Value / scale * 8), 1, 8);
+        return (level * 12.5).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatLatency(long? ms) => ms switch
+    {
+        null => "",
+        >= 1000 => (ms.Value / 1000.0).ToString("0.0s", System.Globalization.CultureInfo.InvariantCulture),
+        _ => $"{ms}ms"
+    };
+
+    private static string FormatInterval(int seconds) => seconds switch
+    {
+        >= 3600 when seconds % 3600 == 0 => $"{seconds / 3600}h",
+        >= 60 when seconds % 60 == 0 => $"{seconds / 60}m",
+        >= 60 => $"{seconds / 60}m {seconds % 60}s",
+        _ => $"{seconds}s"
+    };
+
+    private static string StatusLabel(int statusCode, string? description) => statusCode switch
+    {
+        200 => "OK",
+        201 => "Created",
+        204 => "No Content",
+        301 => "Moved Permanently",
+        302 => "Found",
+        304 => "Not Modified",
+        307 => "Temporary Redirect",
+        308 => "Permanent Redirect",
+        400 => "Bad Request",
+        401 => "Unauthorized",
+        403 => "Forbidden",
+        404 => "Not Found",
+        405 => "Method Not Allowed",
+        408 => "Request Timeout",
+        429 => "Too Many Requests",
+        500 => "Server Error",
+        502 => "Bad Gateway",
+        503 => "Service Unavailable",
+        504 => "Gateway Timeout",
+        _ => description ?? ""
+    };
+}

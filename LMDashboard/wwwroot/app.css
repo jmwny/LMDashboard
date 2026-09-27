@@ -1,4 +1,28 @@
-/* Self-hosted IBM Plex Mono (latin subset) — no external font dependency */
+/* Self-hosted IBM Plex Sans + Mono (latin subset, @fontsource) — no external font dependency */
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('fonts/ibm-plex-sans-latin-400.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('fonts/ibm-plex-sans-latin-500.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('fonts/ibm-plex-sans-latin-600.woff2') format('woff2');
+}
+
 @font-face {
     font-family: 'IBM Plex Mono';
     font-style: normal;
@@ -21,118 +45,902 @@
     box-sizing: border-box;
 }
 
-html, body {
+/* ── Theme tokens ──
+   Dark is the default and also styles the standalone Error / Not Found pages. */
+:root,
+.lm-dashboard.theme-dark {
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+    --radius: 6px;
+    --radius-lg: 10px;
+    --control-h: 34px;
+
+    --bg: #0f1113;
+    --surface: #16191b;
+    --surface-2: #1c2023;
+    --surface-3: #262b2e;
+    --border: #262a2e;
+    --border-strong: #363c41;
+    --fg: #e3e6e4;
+    --fg-muted: #939b96;
+    --fg-subtle: #5f6762;
+    --accent: #4ade80;
+    --accent-fg: #06240f;
+    --ok: #4ade80;
+    --warn: #facc15;
+    --err: #f87171;
+
+    color-scheme: dark;
+}
+
+.lm-dashboard.theme-light {
+    --bg: #f5f6f5;
+    --surface: #ffffff;
+    --surface-2: #f0f2f1;
+    --surface-3: #e3e7e5;
+    --border: #e1e4e2;
+    --border-strong: #c9cfcb;
+    --fg: #1b1f1d;
+    --fg-muted: #58615c;
+    --fg-subtle: #8a938e;
+    --accent: #15803d;
+    --accent-fg: #ffffff;
+    --ok: #16a34a;
+    --warn: #b45309;
+    --err: #dc2626;
+
+    color-scheme: light;
+}
+
+/* Green-phosphor CRT: the original look, kept as an opt-in theme */
+.lm-dashboard.theme-classic {
+    --font-sans: var(--font-mono);
+    --radius: 0;
+    --radius-lg: 0;
+
+    --bg: #0c0c0c;
+    --surface: #0c0c0c;
+    --surface-2: #0c0c0c;
+    --surface-3: #143a14;
+    --border: #143a14;
+    --border-strong: #1a6a1a;
+    --fg: #33ff33;
+    --fg-muted: #22bb22;
+    --fg-subtle: #1a6a1a;
+    --accent: #33ff33;
+    --accent-fg: #0c0c0c;
+    --ok: #33ff33;
+    --warn: #ffff33;
+    --err: #ff4444;
+
+    color-scheme: dark;
+}
+
+html,
+body {
     margin: 0;
     padding: 0;
-    background-color: #050505;
-    color: #33ff33;
-    font-family: 'IBM Plex Mono', Consolas, 'Courier New', monospace;
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
     font-size: 14px;
     line-height: 1.5;
 }
 
-/* Room for the monitor bezel around the screen */
-body {
-    padding: 1.25rem;
+/* Overscroll and short pages show the active theme's background, not the default */
+html:has(.theme-light),
+html:has(.theme-light) body {
+    background-color: #f5f6f5;
 }
 
-/* Standalone pages (Error / Not Found) outside the dashboard shell */
-.lm-error-page {
-    max-width: 120ch;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
+html:has(.theme-classic),
+html:has(.theme-classic) body {
+    background-color: #0c0c0c;
 }
 
-.lm-error-page h1 {
-    font-size: 1.1rem;
-    letter-spacing: 0.2em;
-    border-top: 3px double #33ff33;
-    border-bottom: 3px double #33ff33;
-    padding: 0.15rem 0;
-}
-
-.lm-error-page a {
-    color: #88ff88;
-}
-
-/* ── Theme variables (default: green phosphor) ── */
-.lm-dashboard {
-    --lm-bg: #0c0c0c;
-    --lm-fg: #33ff33;
-    --lm-fg-bright: #88ff88;
-    --lm-fg-dim: #555555;
-    --lm-accent: #33aaff;
-    --lm-border: #1a6a1a;
-    --lm-border-dim: #143a14;
-    --lm-ref: #ffff33;
-    --lm-label: #22bb22;
-    --lm-warn: #ffff33;
-    --lm-orange: #ff8833;
-    --lm-err: #ff3333;
-    --lm-danger: #ff4444;
-    --lm-danger-bright: #ff8888;
-}
-
-/* P3 amber phosphor */
-.lm-dashboard.theme-amber {
-    --lm-bg: #0e0902;
-    --lm-fg: #ffb000;
-    --lm-fg-bright: #ffd75f;
-    --lm-fg-dim: #7d6224;
-    --lm-accent: #ffcc66;
-    --lm-border: #7a5410;
-    --lm-border-dim: #3d2a08;
-    --lm-ref: #ffe14a;
-    --lm-label: #cc8c00;
-    --lm-warn: #ffe14a;
-    --lm-orange: #ff8833;
-    --lm-err: #ff4433;
-    --lm-danger: #ff5544;
-    --lm-danger-bright: #ff9988;
-}
-
-/* Paper-white terminal (light) */
-.lm-dashboard.theme-paper {
-    --lm-bg: #f0ede2;
-    --lm-fg: #262626;
-    --lm-fg-bright: #000000;
-    --lm-fg-dim: #8f8a7a;
-    --lm-accent: #1a5fa8;
-    --lm-border: #a9a390;
-    --lm-border-dim: #d5d0c0;
-    --lm-ref: #8a5a00;
-    --lm-label: #3e6b3e;
-    --lm-warn: #9a7b00;
-    --lm-orange: #b34700;
-    --lm-err: #b31414;
-    --lm-danger: #b31414;
-    --lm-danger-bright: #e05555;
-}
-
-/* Layout — the "screen", framed by a monitor bezel */
-.lm-dashboard {
-    background-color: var(--lm-bg);
-    color: var(--lm-fg);
-    min-height: calc(100vh - 2.5rem);
-    max-width: 120ch;
-    margin: 0 auto;
-    padding: 0.5rem 1.5rem;
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
     overflow: hidden;
-    position: relative;
-    border-radius: 14px;
-    box-shadow:
-        inset 0 0 60px rgba(0, 0, 0, 0.35),
-        0 0 0 2px #000,
-        0 0 0 10px #1d1d1d,
-        0 0 0 12px #303030,
-        0 12px 45px 10px rgba(0, 0, 0, 0.85);
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
-/* Scanlines (toggle) */
-.lm-dashboard.crt-scanlines::before {
+.lm-mono {
+    font-family: var(--font-mono);
+}
+
+.lm-muted {
+    color: var(--fg-muted);
+}
+
+/* ── Shell ── */
+.lm-dashboard {
+    position: relative;
+    min-height: 100vh;
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+}
+
+.lm-shell {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 24px 20px;
+}
+
+/* ── Header ── */
+.lm-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 24px;
+    margin-bottom: 20px;
+}
+
+.lm-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.lm-title:focus {
+    outline: none;
+}
+
+.lm-cursor {
+    margin-left: 1px;
+    font-family: var(--font-mono);
+    font-weight: 400;
+    color: var(--accent);
+    animation: lm-blink 1.06s step-end infinite;
+}
+
+@keyframes lm-blink {
+    50% { opacity: 0; }
+}
+
+.lm-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--fg-muted);
+}
+
+.lm-sum {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lm-sum:not(.ok, .redirect, .down) .lm-dot {
+    opacity: 0.5;
+}
+
+.lm-sum.ok { color: var(--ok); }
+.lm-sum.redirect { color: var(--warn); }
+.lm-sum.down { color: var(--err); }
+
+/* ── Status dot ── */
+.lm-dot {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--fg-subtle);
+}
+
+.lm-dot.ok { background-color: var(--ok); }
+.lm-dot.redirect { background-color: var(--warn); }
+.lm-dot.down { background-color: var(--err); }
+
+.lm-dot.paused {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--fg-subtle);
+}
+
+.lm-dot.is-pinging {
+    animation: lm-pulse 1s ease-in-out infinite;
+}
+
+@keyframes lm-pulse {
+    50% { opacity: 0.35; }
+}
+
+/* ── Controls ── */
+.lm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--control-h);
+    padding: 0 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background-color: var(--surface);
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.lm-btn:hover {
+    background-color: var(--surface-2);
+}
+
+.lm-btn:disabled {
+    color: var(--fg-subtle);
+    cursor: default;
+    background-color: var(--surface);
+}
+
+.lm-btn:focus-visible,
+.lm-seg:focus-visible,
+.lm-seg:has(:focus-visible),
+.lm-row-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.lm-btn-sm {
+    height: 26px;
+    padding: 0 8px;
+    font-size: 12px;
+}
+
+.lm-btn-primary {
+    border-color: var(--accent);
+    background-color: var(--accent);
+    color: var(--accent-fg);
+    font-weight: 600;
+}
+
+.lm-btn-primary:hover {
+    background-color: var(--accent);
+    filter: brightness(1.08);
+}
+
+.lm-btn-ghost {
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--fg-muted);
+}
+
+.lm-btn-ghost:hover {
+    color: var(--fg);
+    background-color: var(--surface-3);
+}
+
+/* Quiet until hovered so a column of Delete buttons doesn't shout */
+.lm-btn-danger:hover,
+.lm-btn-danger:focus-visible {
+    color: var(--err);
+}
+
+.lm-btn-danger-solid {
+    border-color: var(--err);
+    background-color: var(--err);
+    color: var(--bg);
+    font-weight: 600;
+}
+
+.lm-btn-danger-solid:hover {
+    background-color: var(--err);
+    filter: brightness(1.08);
+}
+
+/* Toggle chips: aria-pressed carries the state for both styling and screen readers */
+.lm-chip[aria-pressed="true"] {
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
+}
+
+.lm-chip-danger[aria-pressed="true"] {
+    border-color: color-mix(in srgb, var(--err) 55%, transparent);
+    background-color: color-mix(in srgb, var(--err) 14%, transparent);
+    color: var(--err);
+}
+
+.lm-segmented {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background-color: var(--surface);
+}
+
+.lm-seg {
+    display: inline-flex;
+    align-items: center;
+    height: calc(var(--control-h) - 6px);
+    padding: 0 12px;
+    border: none;
+    border-radius: calc(var(--radius) - 2px);
+    background: none;
+    color: var(--fg-muted);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.lm-seg:hover {
+    color: var(--fg);
+}
+
+.lm-seg.is-on {
+    background-color: var(--surface-3);
+    color: var(--fg);
+}
+
+.lm-input {
+    height: var(--control-h);
+    padding: 0 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background-color: var(--surface);
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.lm-input.lm-mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+
+.lm-input::placeholder {
+    color: var(--fg-subtle);
+}
+
+.lm-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.lm-input-sm {
+    width: 7rem;
+}
+
+/* ── Toolbar ── */
+.lm-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.lm-search-input {
+    flex: 1 1 220px;
+    max-width: 320px;
+}
+
+.lm-toolbar-spacer {
+    flex: 1 1 0;
+}
+
+.lm-alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 8px 8px 8px 12px;
+    border: 1px solid color-mix(in srgb, var(--err) 45%, transparent);
+    border-radius: var(--radius);
+    background-color: color-mix(in srgb, var(--err) 10%, transparent);
+    color: var(--err);
+}
+
+/* ── Add / edit dialog ──
+   Native <dialog> via showModal(): focus trap, Esc and focus return come from the browser.
+   Padding lives on the body so a click on the dialog element itself means the backdrop. */
+.lm-dialog {
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    background-color: var(--surface);
+    color: var(--fg);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.lm-dialog[open] {
+    animation: lm-dialog-in 140ms ease-out;
+}
+
+/* ::backdrop doesn't reliably inherit the theme variables, so its color is literal */
+.lm-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+@keyframes lm-dialog-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
+
+/* Keep the page behind from scrolling while the dialog is up */
+html:has(.lm-dialog[open]) {
+    overflow: hidden;
+}
+
+.lm-dialog-body {
+    padding: 20px;
+}
+
+.lm-dialog-title {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.lm-form-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px 16px;
+}
+
+.lm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    grid-column: span 2;
+    min-width: 0;
+}
+
+.lm-field-url {
+    grid-column: span 4;
+}
+
+.lm-field-label {
+    padding: 0;
+    color: var(--fg-muted);
+    font-size: 12px;
+}
+
+.lm-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lm-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: var(--control-h);
+    cursor: pointer;
+}
+
+.lm-check input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--accent);
+}
+
+/* In the dialog every control fills its grid column, so the second row's edges line up
+   with Name and URL above it. */
+.lm-form-grid .lm-segmented {
+    display: flex;
+}
+
+.lm-form-grid .lm-seg {
+    flex: 1 1 0;
+    justify-content: center;
+}
+
+.lm-form-grid .lm-inline .lm-input {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+}
+
+/* Boxed like an input so it reads as a control in the row, not loose text */
+.lm-form-grid .lm-check {
+    display: flex;
+    padding: 0 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background-color: var(--surface);
+}
+
+.lm-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.lm-form-error {
+    margin-right: auto;
+    color: var(--err);
+}
+
+/* ── Link list ── */
+.lm-list {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background-color: var(--surface);
+}
+
+.lm-group-title {
+    margin: 20px 0 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+}
+
+.lm-group-title:first-of-type {
+    margin-top: 0;
+}
+
+.lm-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 12px;
+    padding: 8px 8px 8px 14px;
+    border-top: 1px solid var(--border);
+}
+
+.lm-row:first-child {
+    border-top: none;
+}
+
+.lm-row:hover {
+    background-color: var(--surface-2);
+}
+
+.lm-row-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1 1 0;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+    border-radius: var(--radius);
+}
+
+.lm-row-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.lm-row-name,
+.lm-row-url {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lm-row-name {
+    font-weight: 500;
+}
+
+.lm-row-link:hover .lm-row-name {
+    text-decoration: underline;
+    text-decoration-color: var(--fg-subtle);
+    text-underline-offset: 3px;
+}
+
+.lm-row-url {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--fg-muted);
+}
+
+.lm-badge {
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    color: var(--fg-muted);
+}
+
+/* Ping history: 20 bars quantized to eighths, like ▁▂▃▅▇ block characters */
+.lm-spark {
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-end;
+    gap: 1px;
+    width: 80px;
+    height: 16px;
+}
+
+.lm-spark i {
+    flex: 1 1 0;
+    min-height: 2px;
+    border-radius: 1px;
+    background-color: var(--accent);
+    opacity: 0.8;
+}
+
+.lm-spark i.is-fail {
+    background-color: var(--err);
+    opacity: 1;
+}
+
+.lm-spark i.is-empty {
+    height: 2px;
+    background-color: var(--border-strong);
+    opacity: 1;
+}
+
+.lm-row-status,
+.lm-row-latency,
+.lm-row-interval {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.lm-row-status {
+    width: 11.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--fg-muted);
+}
+
+.lm-row-status.ok { color: var(--ok); }
+.lm-row-status.redirect { color: var(--warn); }
+.lm-row-status.down { color: var(--err); }
+
+.lm-row-latency {
+    width: 4rem;
+    text-align: right;
+    color: var(--fg-muted);
+}
+
+.lm-row-latency.is-medium { color: var(--warn); }
+.lm-row-latency.is-slow { color: var(--err); }
+
+.lm-row-interval {
+    width: 3.5rem;
+    text-align: right;
+    color: var(--fg-subtle);
+}
+
+.lm-row.is-paused .lm-row-name,
+.lm-row.is-paused .lm-spark {
+    opacity: 0.6;
+}
+
+.lm-row-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 2px;
+}
+
+.lm-row-confirm {
+    display: flex;
+    flex-basis: 100%;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 0 2px;
+    color: var(--err);
+}
+
+.lm-row-confirm strong {
+    color: var(--fg);
+    font-weight: 600;
+}
+
+/* ── Empty state ── */
+.lm-empty {
+    padding: 48px 16px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    color: var(--fg-muted);
+}
+
+.lm-empty p {
+    margin: 0 0 12px;
+}
+
+.lm-empty-prompt {
+    font-family: var(--font-mono);
+    color: var(--accent);
+}
+
+/* ── Footer ── */
+.lm-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--fg-subtle);
+}
+
+.lm-footer-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.lm-brightness {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 6px;
+    color: var(--fg-muted);
+}
+
+.lm-brightness-value {
+    min-width: 4ch;
+    font-family: var(--font-mono);
+}
+
+.lm-brightness-slider {
+    width: 7rem;
+    accent-color: var(--accent);
+}
+
+/* ── Classic CRT theme ──
+   The costly effects (glow, brightness filter, overlays) live only here. */
+.lm-dashboard.theme-classic {
+    /* Inherited, and with no color each element glows in its own color */
+    text-shadow: 0 0 5px;
+    filter: brightness(var(--lm-brightness, 1));
+}
+
+.theme-classic .lm-title {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-weight: 400;
+    text-shadow: 0 0 10px;
+}
+
+.theme-classic .lm-header {
+    padding: 2px 0;
+    border-top: 3px double var(--fg);
+    border-bottom: 3px double var(--fg);
+}
+
+.theme-classic .lm-dot {
+    border-radius: 0;
+}
+
+.theme-classic .lm-btn,
+.theme-classic .lm-seg {
+    height: auto;
+    gap: 0;
+    padding: 0 2px;
+    border-color: transparent;
+    background: none;
+    color: var(--fg);
+    text-transform: uppercase;
+    font-weight: 400;
+}
+
+.theme-classic .lm-btn::before { content: "["; }
+.theme-classic .lm-btn::after { content: "]"; }
+
+.theme-classic .lm-btn:hover,
+.theme-classic .lm-seg:hover {
+    background: none;
+    color: #88ff88;
+    text-decoration: underline;
+    filter: none;
+}
+
+.theme-classic .lm-btn:disabled {
+    color: var(--fg-subtle);
+    text-decoration: none;
+}
+
+.theme-classic .lm-btn-danger,
+.theme-classic .lm-btn-danger-solid {
+    color: var(--err);
+}
+
+.theme-classic .lm-segmented {
+    border: none;
+    padding: 0;
+}
+
+.theme-classic .lm-chip[aria-pressed="true"],
+.theme-classic .lm-seg.is-on {
+    border-color: transparent;
+    background-color: var(--fg);
+    color: var(--bg);
+    text-shadow: none;
+}
+
+.theme-classic .lm-chip-danger[aria-pressed="true"] {
+    background-color: var(--err);
+}
+
+.theme-classic .lm-input,
+.theme-classic .lm-form-grid .lm-check {
+    border-width: 0 0 1px;
+    background: transparent;
+}
+
+.theme-classic .lm-input:focus {
+    box-shadow: none;
+}
+
+.theme-classic .lm-list,
+.theme-classic .lm-dialog {
+    border-style: dashed;
+}
+
+.theme-classic .lm-dialog {
+    box-shadow: 0 0 0 2px #000, 0 0 30px rgba(51, 255, 51, 0.12);
+}
+
+.theme-classic .lm-dialog-title {
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.theme-classic .lm-row {
+    border-top-style: dashed;
+}
+
+/* Inverse-video hover */
+.theme-classic .lm-row:hover {
+    background-color: var(--fg);
+}
+
+.theme-classic .lm-row:hover * {
+    color: var(--bg);
+    text-shadow: none;
+}
+
+.theme-classic .lm-row:hover .lm-spark i,
+.theme-classic .lm-row:hover .lm-dot {
+    background-color: var(--bg);
+}
+
+.theme-classic .lm-spark i {
+    border-radius: 0;
+}
+
+.lm-dashboard.theme-classic.crt-scanlines::before {
     content: "";
     position: absolute;
     inset: 0;
+    z-index: 100;
     background: repeating-linear-gradient(
         to bottom,
         transparent 0px,
@@ -141,565 +949,86 @@ body {
         rgba(0, 0, 0, 0.1) 4px
     );
     pointer-events: none;
-    z-index: 100;
-    border-radius: inherit;
 }
 
-/* Vignette (toggle) */
-.lm-dashboard.crt-vignette::after {
+.lm-dashboard.theme-classic.crt-vignette::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(
-        ellipse at center,
-        transparent 50%,
-        rgba(0, 0, 0, 0.5) 100%
-    );
-    pointer-events: none;
     z-index: 100;
-    border-radius: inherit;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+    pointer-events: none;
 }
 
-/* Header — an h1 for semantics and FocusOnNavigate, styled as plain text */
-.lm-header {
-    text-align: center;
-    border-top: 3px double var(--lm-fg);
-    border-bottom: 3px double var(--lm-fg);
-    padding: 0.15rem 0;
-    letter-spacing: 0.2em;
-    margin: 0;
-    font-size: inherit;
-    font-weight: normal;
+/* ── Standalone pages (Error / Not Found) ── */
+.lm-error-page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 64px 24px;
 }
 
-.lm-header:focus {
-    outline: none;
-}
-
-/* Summary bar */
-.lm-summary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1ch;
-    align-items: baseline;
-    justify-content: space-between;
-    padding: 0.1rem 0;
-}
-
-.lm-summary-left {
-    display: flex;
-    gap: 1ch;
-    align-items: baseline;
-}
-
-.lm-summary-label {
-    color: var(--lm-fg-dim);
-}
-
-.lm-summary-sep {
-    color: var(--lm-border);
-}
-
-/* Search */
-.lm-search {
-    display: flex;
-    align-items: center;
-    gap: 0.5ch;
-}
-
-.lm-search-label {
-    color: var(--lm-fg-dim);
-}
-
-.lm-search-input {
-    width: 20ch;
-}
-
-/* Footer */
-.lm-footer {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    color: var(--lm-border);
-    margin-top: 0.25rem;
-}
-
-/* Divider */
-.lm-divider {
-    border-top: 1px solid var(--lm-border);
-    margin: 0.15rem 0;
-}
-
-/* Toolbar */
-.lm-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.1rem 0;
-}
-
-.lm-toolbar-title {
-    letter-spacing: 0.05em;
-}
-
-/* Link entries — single compact row */
-.lm-entry-wrapper {
-    border-bottom: 1px dashed var(--lm-border-dim);
-}
-
-.lm-entry-wrapper:last-child {
-    border-bottom: none;
-}
-
-.lm-entry {
-    position: relative;
-    display: flex;
-    align-items: baseline;
-    gap: 1ch;
-    padding: 0.1rem 0;
-}
-
-.lm-entry-ping-disabled .lm-status-cell,
-.lm-entry-ping-disabled .lm-ping-time {
-    opacity: 0.45;
-}
-
-.lm-entry-link {
-    display: flex;
-    align-items: baseline;
-    gap: 1ch;
-    flex: 1 1 0;
-    min-width: 0;
-    text-decoration: none;
-    color: inherit;
-}
-
-/* Row 1: ref  name  type  status  ping-time  interval  actions */
-.lm-entry-row1 {
-    display: flex;
-    align-items: baseline;
-    gap: 1ch;
-    flex: 1 1 0;
-    min-width: 0;
-}
-
-.lm-ref {
-    color: var(--lm-ref);
-    font-weight: bold;
-    flex-shrink: 0;
-}
-
-.lm-name {
-    font-weight: bold;
-    flex: 1 1 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.lm-type {
-    color: var(--lm-accent);
-    flex-shrink: 0;
-}
-
-.lm-interval {
-    color: var(--lm-fg-dim);
-    flex-shrink: 0;
-    min-width: 8ch;
-    text-align: right;
-}
-
-.lm-actions {
-    position: relative;
-    z-index: 1;
-    flex-shrink: 0;
-    white-space: nowrap;
-}
-
-/* Fixed width so the columns to the right stay put; rare long
-   statuses ellipsize instead of pushing the row out of alignment */
-.lm-status-cell {
-    flex-shrink: 0;
-    white-space: nowrap;
-    width: 25ch;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.lm-ping-time {
-    color: var(--lm-fg-dim);
-    flex-shrink: 0;
-    min-width: 8ch;
-    text-align: right;
-}
-
-.lm-entry-sep {
-    color: var(--lm-border);
-    flex-shrink: 0;
-}
-
-/* Status indicators */
-.lm-status-ok          { color: var(--lm-fg); }
-.lm-status-redirect    { color: var(--lm-warn); }
-.lm-status-client-err  { color: var(--lm-orange); }
-.lm-status-server-err  { color: var(--lm-err); }
-.lm-status-error       { color: var(--lm-err); }
-.lm-status-pending     { color: var(--lm-fg-dim); }
-
-/* Latency color-coding: quiet when fast, loud when slow */
-.lm-ping-medium        { color: var(--lm-warn); }
-.lm-ping-slow          { color: var(--lm-err); }
-
-/* Buttons */
-.lm-btn {
-    background: none;
-    border: none;
-    color: var(--lm-fg);
-    font-family: inherit;
-    font-size: inherit;
-    cursor: pointer;
-    padding: 0 0.25ch;
-}
-
-.lm-btn:hover {
-    color: var(--lm-fg-bright);
-    text-decoration: underline;
-}
-
-.lm-btn-danger        { color: var(--lm-danger); }
-.lm-btn-danger:hover  { color: var(--lm-danger-bright); }
-
-/* [PING] and [OFF] differ in length; a fixed width keeps the
-   columns to their left from shifting on disabled rows */
-.lm-btn-toggle {
-    display: inline-block;
-    width: 7ch;
-    text-align: left;
-}
-
-.lm-btn-active {
-    color: var(--lm-bg);
-    background-color: var(--lm-fg);
-}
-
-.lm-btn-active:hover {
-    color: var(--lm-bg);
-    background-color: var(--lm-fg-bright);
-    text-decoration: none;
-}
-
-.lm-btn-fail-active {
-    color: var(--lm-bg);
-    background-color: var(--lm-danger);
-}
-
-.lm-btn-fail-active:hover {
-    color: var(--lm-bg);
-    background-color: var(--lm-danger-bright);
-    text-decoration: none;
-}
-
-.lm-btn-disabled {
-    color: var(--lm-border-dim);
-    cursor: default;
-}
-
-.lm-btn-disabled:hover {
-    color: var(--lm-border-dim);
-    text-decoration: none;
-}
-
-.lm-filter {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5ch;
-    align-items: center;
-}
-
-.lm-filter-label {
-    color: var(--lm-fg-dim);
-    margin-right: 0.5ch;
-}
-
-/* Form */
-.lm-form {
-    padding: 0.15rem 0;
-}
-
-.lm-prompt {
-    color: var(--lm-ref);
-    font-weight: bold;
-}
-
-.lm-field {
-    display: flex;
-    align-items: center;
-    gap: 1ch;
-    margin: 0.1rem 0;
-}
-
-.lm-label {
-    flex-shrink: 0;
-    width: 10ch;
-    text-align: right;
-    color: var(--lm-label);
-}
-
-.lm-form-row {
-    display: flex;
-    gap: 3ch;
-    flex-wrap: wrap;
-}
-
-.lm-input {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--lm-fg);
-    color: var(--lm-fg-bright);
-    font-family: inherit;
-    font-size: inherit;
-    padding: 0.1rem 0.4ch;
-    width: 40ch;
-}
-
-.lm-input:focus {
-    outline: none;
-    border-bottom-color: var(--lm-fg-bright);
-}
-
-.lm-input-sm {
-    width: 10ch;
-}
-
-.lm-radio-group {
-    display: flex;
-    gap: 2ch;
-}
-
-.lm-radio {
-    display: flex;
-    align-items: center;
-    gap: 0.5ch;
-    cursor: pointer;
-}
-
-.lm-radio input[type="radio"] {
-    accent-color: var(--lm-fg);
-    cursor: pointer;
-}
-
-.lm-radio input[type="checkbox"] {
-    accent-color: var(--lm-fg);
-    cursor: pointer;
-}
-
-.lm-form-actions {
-    margin-top: 0.15rem;
-    display: flex;
-    align-items: baseline;
-    gap: 1ch;
-}
-
-.lm-form-error {
-    color: var(--lm-danger);
-}
-
-.lm-empty {
-    color: var(--lm-fg-dim);
-    margin: 0.15rem 0;
-}
-
-.lm-empty-art {
-    color: var(--lm-fg-dim);
-    font-family: inherit;
-    font-size: inherit;
-    line-height: 1.3;
-    margin: 0.5rem 0;
-}
-
-.lm-confirm {
-    display: flex;
-    align-items: baseline;
-    justify-content: flex-end;
-    gap: 1ch;
-    padding: 0.15rem 0;
-    color: var(--lm-danger);
-}
-
-.lm-confirm-name {
-    color: var(--lm-ref);
-}
-
-.lm-section-header {
-    color: var(--lm-accent);
-    padding: 0.15rem 0 0;
-    letter-spacing: 0.1em;
-}
-
-.lm-section-header:not(:first-child) {
-    margin-top: 0.15rem;
-    border-top: 1px dashed var(--lm-border);
-    padding-top: 0.25rem;
-}
-
-/* Footer controls */
-.lm-footer-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5ch;
-}
-
-/* Brightness slider */
-.lm-brightness {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5ch;
-    margin-right: 1ch;
-}
-
-.lm-brightness-label {
-    color: var(--lm-fg-dim);
-}
-
-.lm-brightness-value {
-    color: var(--lm-fg-dim);
-    min-width: 4ch;
-    text-align: right;
-}
-
-.lm-brightness-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 10ch;
-    height: 4px;
-    background: var(--lm-border);
-    outline: none;
-    cursor: pointer;
-    vertical-align: middle;
-}
-
-.lm-brightness-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 10px;
-    height: 14px;
-    background: var(--lm-fg);
-    cursor: pointer;
-}
-
-.lm-brightness-slider::-moz-range-thumb {
-    width: 10px;
-    height: 14px;
-    background: var(--lm-fg);
-    border: none;
-    cursor: pointer;
-}
-
-.lm-brightness-slider:hover::-webkit-slider-thumb {
-    background: var(--lm-fg-bright);
-}
-
-.lm-brightness-slider:hover::-moz-range-thumb {
-    background: var(--lm-fg-bright);
-}
-
-/* Phosphor glow — text-shadow with no color glows in each element's own color */
-.lm-dashboard *,
-.lm-error-page * {
-    text-shadow: 0 0 5px;
-}
-
-.lm-header,
 .lm-error-page h1 {
-    text-shadow: 0 0 10px;
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 600;
 }
 
-/* Active (inverse) buttons: dark text on phosphor needs no glow */
-.lm-btn-active,
-.lm-btn-fail-active {
-    text-shadow: none;
+.lm-error-page p {
+    color: var(--fg-muted);
 }
 
-/* Paper-white renders as crisp ink, not glowing phosphor */
-.lm-dashboard.theme-paper * {
-    text-shadow: none;
+.lm-error-page code {
+    font-family: var(--font-mono);
 }
 
-/* Lighter vignette on the paper theme so it reads as shading, not smoke */
-.lm-dashboard.theme-paper.crt-vignette::after {
-    background: radial-gradient(
-        ellipse at center,
-        transparent 55%,
-        rgba(0, 0, 0, 0.18) 100%
-    );
-}
-
-/* Blinking block cursor */
-.lm-cursor::after {
-    content: "█";
-    margin-left: 0.5ch;
-    animation: lm-blink 1.06s step-end infinite;
-}
-
-@keyframes lm-blink {
-    50% { opacity: 0; }
+.lm-error-page a {
+    font-family: var(--font-mono);
+    color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .lm-cursor::after {
+    .lm-cursor,
+    .lm-dot.is-pinging,
+    .lm-dialog[open] {
         animation: none;
     }
 }
 
-/* Inverse-video hover */
-.lm-entry:hover {
-    background-color: var(--lm-fg);
-}
-
-.lm-entry:hover * {
-    color: var(--lm-bg);
-    text-shadow: none;
-}
-
-/* Narrow screens: let the fixed-width rows wrap instead of clipping */
-@media (max-width: 700px) {
-    body {
-        padding: 0.75rem;
+/* ── Narrow screens ── */
+@media (max-width: 760px) {
+    .lm-shell {
+        padding: 20px 16px;
     }
 
-    .lm-dashboard {
-        min-height: calc(100vh - 1.5rem);
-        border-radius: 10px;
-        box-shadow:
-            inset 0 0 40px rgba(0, 0, 0, 0.35),
-            0 0 0 2px #000,
-            0 0 0 6px #1d1d1d,
-            0 0 0 8px #303030;
+    .lm-search-input {
+        max-width: none;
     }
 
-    .lm-entry,
-    .lm-entry-row1,
-    .lm-field {
-        flex-wrap: wrap;
+    .lm-toolbar-spacer {
+        display: none;
     }
 
-    .lm-status-cell,
-    .lm-ping-time,
-    .lm-interval {
+    .lm-form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .lm-field,
+    .lm-field-url {
+        grid-column: auto;
+    }
+
+    .lm-spark,
+    .lm-row-interval {
+        display: none;
+    }
+
+    .lm-row-status {
         width: auto;
-        min-width: 0;
-        text-align: left;
+        max-width: 9rem;
     }
 
-    .lm-input {
+    .lm-row-actions {
         width: 100%;
-        max-width: 40ch;
-    }
-
-    .lm-label {
-        text-align: left;
+        justify-content: flex-end;
     }
 }

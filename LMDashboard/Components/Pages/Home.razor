@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
 @implements IDisposable
 @using System.Globalization
@@ -6,187 +6,129 @@
 
 <PageTitle>LM Dashboard</PageTitle>
 
-<div class="@DashboardClasses" style="filter: brightness(@_brightness.ToString(CultureInfo.InvariantCulture))">
-    <h1 class="lm-header" tabindex="-1">LM DASHBOARD<span class="lm-cursor" aria-hidden="true"></span></h1>
-
-    @{
-        var (okCount, warnCount, failCount, waitCount, pingCount) = GetStatusSummary();
-    }
-    <div class="lm-summary">
-        <span class="lm-summary-left">
-            <span class="lm-summary-label">STATUS:</span>
-            <span class="lm-status-ok">■ @okCount OK</span>
-            <span class="lm-summary-sep">·</span>
-            <span class="lm-status-error">✖ @failCount FAIL</span>
-            <span class="lm-summary-sep">·</span>
-            <span class="lm-status-redirect">▲ @warnCount REDIR</span>
-            <span class="lm-summary-sep">·</span>
-            <span class="lm-status-pending">► @pingCount PING</span>
-            <span class="lm-summary-sep">·</span>
-            <span class="lm-status-pending">□ @waitCount WAIT</span>
-        </span>
-        <span class="lm-search">
-            <label class="lm-search-label" for="lm-search-input">FIND:</label>
-            <input id="lm-search-input" class="lm-input lm-search-input" placeholder="search..." @bind="_searchTerm" @bind:event="oninput" @bind:after="ApplyFilter" />
-            @if (!string.IsNullOrEmpty(_searchTerm))
-            {
-                <button class="lm-btn" @onclick="ClearSearch">[X]</button>
+<div class="@DashboardClasses" style="--lm-brightness: @_brightness.ToString(CultureInfo.InvariantCulture)">
+    <div class="lm-shell">
+        <header class="lm-header">
+            <h1 class="lm-title" tabindex="-1">LM Dashboard<span class="lm-cursor" aria-hidden="true">_</span></h1>
+            @{
+                var summary = GetStatusSummary();
             }
-        </span>
-    </div>
-
-    @if (_storeError is not null)
-    {
-        <div class="lm-form-error" role="alert">
-            ! @_storeError
-            <button class="lm-btn" @onclick="() => _storeError = null">[X]</button>
-        </div>
-    }
-
-    @if (_editing is not null)
-    {
-        <div class="lm-divider"></div>
-        <div class="lm-form">
-            <span class="lm-prompt">&gt; @(_isNew ? "ADD NEW LINK" : "EDIT LINK")</span>
-            <div class="lm-field">
-                <span class="lm-label">Name:</span>
-                <input class="lm-input" @bind="_editing.Name" placeholder="Website and/or Description" />
-            </div>
-            <div class="lm-field">
-                <span class="lm-label">URL:</span>
-                <input class="lm-input" @bind="_editing.Url" placeholder="https://github.com" />
-            </div>
-            <div class="lm-form-row">
-                <div class="lm-field">
-                    <span class="lm-label">Type:</span>
-                    <div class="lm-radio-group">
-                        <label class="lm-radio">
-                            <input type="radio" name="linkType" checked="@(!_editing.IsExternal)"
-                                   @onchange="() => SetExternal(false)" /> Internal
-                        </label>
-                        <label class="lm-radio">
-                            <input type="radio" name="linkType" checked="@(_editing.IsExternal)"
-                                   @onchange="() => SetExternal(true)" /> External
-                        </label>
-                    </div>
-                </div>
-                <div class="lm-field">
-                    <span class="lm-label">Interval:</span>
-                    <input class="lm-input lm-input-sm" type="number" min="1" @bind="_editing.PingIntervalSeconds" />
-                    <span>seconds</span>
-                </div>
-                <div class="lm-field">
-                    <span class="lm-label">Ping:</span>
-                    <label class="lm-radio">
-                        <input type="checkbox" @bind="_editing.PingEnabled" /> Enabled
-                    </label>
-                </div>
-            </div>
-            <div class="lm-form-actions">
-                <button class="lm-btn" @onclick="SaveLink">[SAVE]</button>
-                <button class="lm-btn" @onclick="CancelEdit">[CANCEL]</button>
-                @if (_formError is not null)
+            <p class="lm-summary">
+                <span class="lm-sum @(summary.Up > 0 ? "ok" : "")"><span class="lm-dot ok" aria-hidden="true"></span>@summary.Up up</span>
+                <span class="lm-sum @(summary.Redirect > 0 ? "redirect" : "")"><span class="lm-dot redirect" aria-hidden="true"></span>@summary.Redirect redirect</span>
+                <span class="lm-sum @(summary.Down > 0 ? "down" : "")"><span class="lm-dot down" aria-hidden="true"></span>@summary.Down down</span>
+                @if (summary.Pending > 0)
                 {
-                    <span class="lm-form-error">! @_formError</span>
+                    <span class="lm-sum"><span class="lm-dot pending" aria-hidden="true"></span>@summary.Pending pending</span>
+                }
+                @if (summary.Paused > 0)
+                {
+                    <span class="lm-sum"><span class="lm-dot paused" aria-hidden="true"></span>@summary.Paused paused</span>
+                }
+            </p>
+        </header>
+
+        <div class="lm-toolbar">
+            <label class="sr-only" for="lm-search">Search links</label>
+            @* Bound on change; app.js raises change once typing pauses so every keystroke isn't a round trip. *@
+            <input id="lm-search" type="search" class="lm-input lm-search-input" placeholder="Search name or URL"
+                   @bind="_searchTerm" @bind:after="ApplyFilter" />
+
+            <div class="lm-segmented" role="group" aria-label="Link type">
+                <button class="lm-seg @(_filter == LinkFilter.All ? "is-on" : "")" aria-pressed="@Pressed(_filter == LinkFilter.All)" @onclick="() => SetFilter(LinkFilter.All)">All</button>
+                <button class="lm-seg @(_filter == LinkFilter.Internal ? "is-on" : "")" aria-pressed="@Pressed(_filter == LinkFilter.Internal)" @onclick="() => SetFilter(LinkFilter.Internal)">Internal</button>
+                <button class="lm-seg @(_filter == LinkFilter.External ? "is-on" : "")" aria-pressed="@Pressed(_filter == LinkFilter.External)" @onclick="() => SetFilter(LinkFilter.External)">External</button>
+            </div>
+
+            <button class="lm-btn lm-chip" aria-pressed="@Pressed(_grouped && _filter == LinkFilter.All)" disabled="@(_filter != LinkFilter.All)"
+                    title="@(_filter == LinkFilter.All ? "Group by type" : "Grouping applies to All")" @onclick="ToggleGrouped">Group</button>
+            <button class="lm-btn lm-chip lm-chip-danger" aria-pressed="@Pressed(_showFailingOnly)" @onclick="ToggleFailing">Failing only</button>
+
+            <span class="lm-toolbar-spacer"></span>
+            <button class="lm-btn lm-btn-primary" @onclick="AddNew">Add link</button>
+        </div>
+
+        @if (_storeError is not null)
+        {
+            <div class="lm-alert" role="alert">
+                <span>@_storeError</span>
+                <button class="lm-btn lm-btn-ghost lm-btn-sm" aria-label="Dismiss" @onclick="() => _storeError = null">Dismiss</button>
+            </div>
+        }
+
+        @if (_filtered.Count == 0)
+        {
+            <div class="lm-empty">
+                @if (_links.Count == 0)
+                {
+                    <p class="lm-empty-prompt">&gt; no links yet<span class="lm-cursor" aria-hidden="true">_</span></p>
+                    <p>Add the sites and services you want on your start page.</p>
+                    <button class="lm-btn lm-btn-primary" @onclick="AddNew">Add link</button>
+                }
+                else if (_showFailingOnly && string.IsNullOrWhiteSpace(_searchTerm))
+                {
+                    <p class="lm-empty-prompt">&gt; all systems nominal</p>
+                    <p>Nothing is failing right now.</p>
+                }
+                else
+                {
+                    <p>No links match the current filters.</p>
                 }
             </div>
-        </div>
-    }
-
-    <div class="lm-divider"></div>
-    <div class="lm-toolbar">
-        <span class="lm-toolbar-title">LINK DIRECTORY (@_filtered.Count @(_filtered.Count == 1 ? "entry" : "entries"))</span>
-        <div class="lm-filter">
-            <span class="lm-filter-label">SHOW:</span>
-            <button class="lm-btn @(_filter == LinkFilter.All ? "lm-btn-active" : "")" @onclick="() => SetFilter(LinkFilter.All)">[ALL]</button>
-            <button class="lm-btn @(_filter == LinkFilter.Internal ? "lm-btn-active" : "")" @onclick="() => SetFilter(LinkFilter.Internal)">[INT]</button>
-            <button class="lm-btn @(_filter == LinkFilter.External ? "lm-btn-active" : "")" @onclick="() => SetFilter(LinkFilter.External)">[EXT]</button>
-            <span class="lm-filter-label">│</span>
-            @if (_filter == LinkFilter.All)
-            {
-                <button class="lm-btn @(_grouped ? "lm-btn-active" : "")" @onclick="ToggleGrouped">[GROUP]</button>
-            }
-            else
-            {
-                <button class="lm-btn lm-btn-disabled" disabled>[GROUP]</button>
-            }
-            <span class="lm-filter-label">│</span>
-            <button class="lm-btn @(_showFailingOnly ? "lm-btn-fail-active" : "")" @onclick="ToggleFailing">[FAIL]</button>
-        </div>
-        <button class="lm-btn" @onclick="AddNew">[ADD NEW]</button>
-    </div>
-    <div class="lm-divider"></div>
-
-    @if (_filtered.Count == 0)
-    {
-        @if (_links.Count == 0)
+        }
+        else if (_filter == LinkFilter.All && _grouped)
         {
-            <pre class="lm-empty-art">
-+----------------------------+
-|   LINK DIRECTORY : EMPTY   |
-+----------------------------+
+            var internals = _filtered.Where(l => !l.IsExternal).ToList();
+            var externals = _filtered.Where(l => l.IsExternal).ToList();
 
-  > PRESS [ADD NEW] TO BEGIN<span class="lm-cursor" aria-hidden="true"></span>
-</pre>
+            @if (internals.Count > 0)
+            {
+                <h2 class="lm-group-title">── Internal · @internals.Count</h2>
+                @RenderList(internals, showType: false)
+            }
+            @if (externals.Count > 0)
+            {
+                <h2 class="lm-group-title">── External · @externals.Count</h2>
+                @RenderList(externals, showType: false)
+            }
         }
         else
         {
-            <div class="lm-empty">@(_showFailingOnly ? "All links are healthy." : "No links match the current filter.")</div>
+            @RenderList(_filtered, showType: _filter == LinkFilter.All)
         }
-    }
-    else if (_filter == LinkFilter.All && _grouped)
-    {
-        var internals = _filtered.Where(l => !l.IsExternal).ToList();
-        var externals = _filtered.Where(l => l.IsExternal).ToList();
-        var idx = 0;
 
-        if (internals.Count > 0)
-        {
-            <div class="lm-section-header">── INTERNAL (@internals.Count) ──</div>
-            @foreach (var link in internals)
-            {
-                idx++;
-                @RenderEntry(link, idx, showType: false)
-            }
-        }
-        if (externals.Count > 0)
-        {
-            <div class="lm-section-header">── EXTERNAL (@externals.Count) ──</div>
-            @foreach (var link in externals)
-            {
-                idx++;
-                @RenderEntry(link, idx, showType: false)
-            }
-        }
-    }
-    else
-    {
-        @for (var i = 0; i < _filtered.Count; i++)
-        {
-            var link = _filtered[i];
-            @RenderEntry(link, i + 1, showType: _filter == LinkFilter.All)
-        }
-    }
+        <footer class="lm-footer">
+            <span class="lm-mono">v0.1'ish</span>
+            <div class="lm-footer-controls">
+                @if (_theme == Theme.Classic)
+                {
+                    <label class="lm-brightness">
+                        <span>Brightness</span>
+                        @* app.js previews the drag locally; the server only sees the released value. *@
+                        <input type="range" class="lm-brightness-slider" min="@MinBrightness.ToString(CultureInfo.InvariantCulture)"
+                               max="@MaxBrightness.ToString(CultureInfo.InvariantCulture)" step="0.05"
+                               value="@_brightness.ToString(CultureInfo.InvariantCulture)" @onchange="OnBrightnessCommitted" />
+                        <span class="lm-brightness-value">@_brightness.ToString("0.00", CultureInfo.InvariantCulture)</span>
+                    </label>
+                    <button class="lm-btn lm-chip lm-btn-sm" aria-pressed="@Pressed(_scanlines)" @onclick="ToggleScanlines">Scanlines</button>
+                    <button class="lm-btn lm-chip lm-btn-sm" aria-pressed="@Pressed(_vignette)" @onclick="ToggleVignette">Vignette</button>
+                }
+                <button class="lm-btn lm-btn-sm" title="Change theme" @onclick="CycleTheme">Theme: @_theme</button>
+            </div>
+        </footer>
 
-    <div class="lm-divider"></div>
-    <div class="lm-footer">
-        <span>v0.1'ish</span>
-        <span class="lm-footer-controls">
-            <span class="lm-brightness">
-                <span class="lm-brightness-label">BRT:</span>
-                <input type="range" class="lm-brightness-slider" min="0.1" max="1.5" step="0.05"
-                       value="@_brightness.ToString(CultureInfo.InvariantCulture)"
-                       @oninput="OnBrightnessChanged" @onchange="OnBrightnessCommitted" />
-                <span class="lm-brightness-value">@_brightness.ToString("0.00", CultureInfo.InvariantCulture)</span>
-            </span>
-            <button class="lm-btn @(_scanlines ? "lm-btn-active" : "")" @onclick="ToggleScanlines">[SCANLINES]</button>
-            <button class="lm-btn @(_vignette ? "lm-btn-active" : "")" @onclick="ToggleVignette">[VIGNETTE]</button>
-            <button class="lm-btn" title="Cycle theme" @onclick="CycleTheme">[@_theme.ToString().ToUpperInvariant()]</button>
-        </span>
+        <LinkDialog Editing="_editing" IsNew="_isNew" Error="@_formError" OnSave="SaveLink" OnCancel="CancelEdit" />
     </div>
 </div>
 
 @code {
+    // Pings change the store several times a second; UI refreshes are batched to this interval.
+    private static readonly TimeSpan RefreshDelay = TimeSpan.FromMilliseconds(250);
+
+    // Matches the slider's min/max; anything the client sends is clamped to this range.
+    private const double MinBrightness = 0.1;
+    private const double MaxBrightness = 1.5;
+
     private List<SiteLink> _links = [];
     private List<SiteLink> _filtered = [];
     private SiteLink? _editing;
@@ -201,87 +143,34 @@
     private bool _scanlines = true;
     private bool _vignette = true;
     private double _brightness = 1.0;
-    private Theme _theme = Theme.Green;
-
-    // Matches the slider's min/max; anything the client sends is clamped to this range.
-    private const double MinBrightness = 0.1;
-    private const double MaxBrightness = 1.5;
+    private Theme _theme = Theme.Dark;
+    private int _refreshQueued;
+    private readonly CancellationTokenSource _disposed = new();
 
     private enum LinkFilter { All, Internal, External }
 
-    private enum Theme { Green, Amber, Paper }
-
-    private string ThemeClass => _theme switch
-    {
-        Theme.Amber => "theme-amber",
-        Theme.Paper => "theme-paper",
-        _ => ""
-    };
+    private enum Theme { Dark, Light, Classic }
 
     private string DashboardClasses => string.Join(" ",
         new[]
         {
             "lm-dashboard",
-            ThemeClass,
-            _scanlines ? "crt-scanlines" : "",
-            _vignette ? "crt-vignette" : ""
+            $"theme-{_theme.ToString().ToLowerInvariant()}",
+            _theme == Theme.Classic && _scanlines ? "crt-scanlines" : "",
+            _theme == Theme.Classic && _vignette ? "crt-vignette" : ""
         }.Where(c => c.Length > 0));
 
-    private RenderFragment RenderEntry(SiteLink link, int idx, bool showType) => __builder =>
+    private static string Pressed(bool value) => value ? "true" : "false";
+
+    private RenderFragment RenderList(List<SiteLink> links, bool showType) => __builder =>
     {
-        <div class="lm-entry-wrapper">
-            <div class="lm-entry @(!link.PingEnabled ? "lm-entry-ping-disabled" : "")">
-                <a class="lm-entry-link" href="@link.Url" target="_blank" rel="noopener">
-                    <span class="lm-entry-row1">
-                        <span class="lm-ref">[@idx]</span>
-                        <span class="lm-name">@link.Name</span>
-                        @if (showType)
-                        {
-                            <span class="lm-type">@(link.IsExternal ? "EXT" : "INT")</span>
-                        }
-                        <span class="lm-status-cell">
-                            @if (!link.PingEnabled)
-                            {
-                                <span class="lm-status-pending">□ DISABLED</span>
-                            }
-                            else if (link.IsPinging)
-                            {
-                                <span class="lm-status-pending">► PINGING...</span>
-                            }
-                            else if (link.LastChecked is not null)
-                            {
-                                <span class="@GetStatusClass(link.LastStatusCode)">@GetStatusGlyph(link.LastStatusCode) @GetStatusDisplay(link.LastStatusCode, link.LastStatusDescription)</span>
-                            }
-                            else
-                            {
-                                <span class="lm-status-pending">□ WAITING</span>
-                            }
-                        </span>
-                        <span class="lm-ping-time @GetPingSpeedClass(link.LastPingMs)">
-                            @if (link.LastPingMs is not null)
-                            {
-                                @($"{link.LastPingMs}ms")
-                            }
-                        </span>
-                        <span class="lm-entry-sep">│</span>
-                        <span class="lm-interval">@FormatInterval(link.PingIntervalSeconds)</span>
-                    </span>
-                </a>
-                <span class="lm-actions">
-                    <button class="lm-btn lm-btn-toggle @(link.PingEnabled ? "" : "lm-btn-danger")" @onclick="() => TogglePing(link.Id)">@(link.PingEnabled ? "[PING]" : "[OFF]")</button>
-                    <button class="lm-btn" @onclick="() => EditLink(link)">[EDIT]</button>
-                    <button class="lm-btn lm-btn-danger" @onclick="() => RequestDelete(link.Id)">[DEL]</button>
-                </span>
-            </div>
-            @if (_pendingDeleteId == link.Id)
+        <div class="lm-list">
+            @foreach (var link in links)
             {
-                <div class="lm-confirm">
-                    <span>Delete</span>
-                    <span class="lm-confirm-name">"@link.Name"</span>
-                    <span>?</span>
-                    <button class="lm-btn lm-btn-danger" @onclick="ConfirmDelete">[YES]</button>
-                    <button class="lm-btn" @onclick="CancelDelete">[NO]</button>
-                </div>
+                var id = link.Id;
+                <LinkRow @key="id" Link="link" ShowType="showType" ConfirmingDelete="_pendingDeleteId == id"
+                         OnToggle="() => TogglePing(id)" OnEdit="() => EditLink(link)"
+                         OnRequestDelete="() => RequestDelete(id)" OnConfirmDelete="ConfirmDelete" OnCancelDelete="CancelDelete" />
             }
         </div>
     };
@@ -297,7 +186,7 @@
     private void ApplyPreferences(DashboardPreferences prefs)
     {
         _filter = Enum.TryParse<LinkFilter>(prefs.Filter, out var f) ? f : LinkFilter.All;
-        _theme = Enum.TryParse<Theme>(prefs.Theme, out var t) ? t : Theme.Green;
+        _theme = Enum.TryParse<Theme>(prefs.Theme, out var t) && Enum.IsDefined(t) ? t : Theme.Dark;
         _grouped = prefs.Grouped;
         _scanlines = prefs.Scanlines;
         _vignette = prefs.Vignette;
@@ -310,8 +199,22 @@
 
     private void HandleStoreChange()
     {
-        InvokeAsync(() =>
+        // Only one refresh is queued at a time; changes that land while it waits ride along.
+        if (Interlocked.Exchange(ref _refreshQueued, 1) == 1)
+            return;
+
+        _ = InvokeAsync(async () =>
         {
+            try
+            {
+                await Task.Delay(RefreshDelay, _disposed.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            Volatile.Write(ref _refreshQueued, 0);
             RefreshLinks();
             StateHasChanged();
         });
@@ -343,7 +246,7 @@
             _ => _links
         };
 
-        // Failing means a completed check outside 2xx/3xx; redirects count as REDIR
+        // Failing means a completed check outside 2xx/3xx; redirects count separately
         // in the summary, so they are not treated as failures here either.
         if (_showFailingOnly)
             result = result.Where(l => l.LastChecked is not null && l.LastStatusCode is not (>= 200 and < 400));
@@ -375,12 +278,6 @@
         PersistPreferences();
     }
 
-    private void ClearSearch()
-    {
-        _searchTerm = string.Empty;
-        ApplyFilter();
-    }
-
     private void ToggleScanlines()
     {
         _scanlines = !_scanlines;
@@ -397,27 +294,21 @@
     {
         _theme = _theme switch
         {
-            Theme.Green => Theme.Amber,
-            Theme.Amber => Theme.Paper,
-            _ => Theme.Green
+            Theme.Dark => Theme.Light,
+            Theme.Light => Theme.Classic,
+            _ => Theme.Dark
         };
         PersistPreferences();
     }
 
-    private void OnBrightnessChanged(ChangeEventArgs e)
+    private void OnBrightnessCommitted(ChangeEventArgs e)
     {
         if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var val)
             && double.IsFinite(val))
         {
             _brightness = ClampBrightness(val);
+            PersistPreferences();
         }
-    }
-
-    // Persist only when the slider is released, not on every drag tick.
-    private void OnBrightnessCommitted(ChangeEventArgs e)
-    {
-        OnBrightnessChanged(e);
-        PersistPreferences();
     }
 
     private void AddNew()
@@ -425,16 +316,6 @@
         _isNew = true;
         _formError = null;
         _editing = new SiteLink { PingIntervalSeconds = 30 };
-    }
-
-    private void SetExternal(bool isExternal)
-    {
-        if (_editing is null) return;
-        _editing.IsExternal = isExternal;
-        if (_isNew)
-        {
-            _editing.PingIntervalSeconds = isExternal ? 300 : 30;
-        }
     }
 
     private void EditLink(SiteLink link)
@@ -462,14 +343,14 @@
 
         if (_editing.Name.Length == 0 || _editing.Url.Length == 0)
         {
-            _formError = "NAME AND URL ARE REQUIRED";
+            _formError = "Name and URL are required.";
             return;
         }
 
         if (!Uri.TryCreate(_editing.Url, UriKind.Absolute, out var uri)
             || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
-            _formError = "URL MUST START WITH http:// OR https://";
+            _formError = "URL must start with http:// or https://.";
             return;
         }
 
@@ -485,18 +366,24 @@
                 found = Store.Update(link);
         });
 
+        // Show the failure in the dialog, where the user is looking, rather than behind it.
         if (!saved)
+        {
+            _formError = _storeError;
+            _storeError = null;
             return;
+        }
 
         if (!found)
         {
-            _formError = "LINK NO LONGER EXISTS";
+            _formError = "This link no longer exists.";
             return;
         }
 
         _editing = null;
         _isNew = false;
         _formError = null;
+        RefreshLinks();
     }
 
     private void CancelEdit()
@@ -523,12 +410,17 @@
                 _editing = null;
                 _isNew = false;
             }
+            RefreshLinks();
         }
     }
 
     private void CancelDelete() => _pendingDeleteId = null;
 
-    private void TogglePing(Guid id) => TryStore(() => Store.TogglePingEnabled(id));
+    private void TogglePing(Guid id)
+    {
+        if (TryStore(() => Store.TogglePingEnabled(id)))
+            RefreshLinks();
+    }
 
     private void PersistPreferences()
     {
@@ -557,86 +449,30 @@
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _storeError = "COULD NOT SAVE CHANGES (SEE SERVER LOG)";
+            _storeError = "Couldn't save your changes. Check the server log.";
             return false;
         }
     }
 
-    private static string FormatInterval(int seconds) =>
-        seconds >= 60 ? $"{seconds / 60}m {seconds % 60}s" : $"{seconds}s";
-
-    private static string GetStatusClass(int? statusCode) => statusCode switch
+    private (int Up, int Redirect, int Down, int Pending, int Paused) GetStatusSummary()
     {
-        >= 200 and < 300 => "lm-status-ok",
-        >= 300 and < 400 => "lm-status-redirect",
-        >= 400 and < 500 => "lm-status-client-err",
-        >= 500           => "lm-status-server-err",
-        _                => "lm-status-error"
-    };
-
-    // Shape-coded so states are distinguishable without relying on color alone.
-    private static string GetStatusGlyph(int? statusCode) => statusCode switch
-    {
-        >= 200 and < 300 => "■",
-        >= 300 and < 400 => "▲",
-        _                => "✖"
-    };
-
-    private static string GetPingSpeedClass(long? ms) => ms switch
-    {
-        >= 500 => "lm-ping-slow",
-        >= 100 => "lm-ping-medium",
-        _      => ""
-    };
-
-    private static string GetStatusDisplay(int? statusCode, string? description)
-    {
-        if (statusCode is null)
-            return description ?? "UNKNOWN";
-
-        var label = statusCode switch
-        {
-            200 => "OK",
-            201 => "Created",
-            204 => "No Content",
-            301 => "Moved Permanently",
-            302 => "Found (Redirect)",
-            304 => "Not Modified",
-            400 => "Bad Request",
-            401 => "Unauthorized",
-            403 => "Forbidden",
-            404 => "Not Found",
-            405 => "Method Not Allowed",
-            408 => "Request Timeout",
-            429 => "Too Many Requests",
-            500 => "Server Error",
-            502 => "Bad Gateway",
-            503 => "Service Unavailable",
-            504 => "Gateway Timeout",
-            _   => description ?? "Unknown"
-        };
-
-        return $"{statusCode} {label}";
-    }
-
-    private (int ok, int warn, int fail, int waiting, int pinging) GetStatusSummary()
-    {
-        int ok = 0, warn = 0, fail = 0, waiting = 0, pinging = 0;
+        int up = 0, redirect = 0, down = 0, pending = 0, paused = 0;
         foreach (var l in _links)
         {
-            if (!l.PingEnabled) continue;
-            if (l.IsPinging) pinging++;
-            else if (l.LastChecked is null) waiting++;
-            else if (l.LastStatusCode is >= 200 and < 300) ok++;
-            else if (l.LastStatusCode is >= 300 and < 400) warn++;
-            else fail++;
+            if (!l.PingEnabled) paused++;
+            else if (l.LastChecked is null) pending++;
+            else if (l.LastStatusCode is >= 200 and < 300) up++;
+            else if (l.LastStatusCode is >= 300 and < 400) redirect++;
+            else down++;
         }
-        return (ok, warn, fail, waiting, pinging);
+        return (up, redirect, down, pending, paused);
     }
 
     public void Dispose()
     {
         Store.OnChange -= HandleStoreChange;
         Store.OnPreferencesChange -= HandlePreferencesChange;
+        _disposed.Cancel();
+        _disposed.Dispose();
     }
 }

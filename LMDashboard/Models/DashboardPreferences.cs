@@ -3,7 +3,7 @@ namespace LMDashboard.Models;
 public class DashboardPreferences
 {
     public string Filter { get; set; } = "All";
-    public string Theme { get; set; } = "Green";
+    public string Theme { get; set; } = "Dark";
     public bool Grouped { get; set; }
     public bool Scanlines { get; set; } = true;
     public bool Vignette { get; set; } = true;

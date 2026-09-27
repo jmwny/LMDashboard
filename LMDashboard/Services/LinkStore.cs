@@ -8,6 +8,7 @@ namespace LMDashboard.Services;
 public class LinkStore
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new() { WriteIndented = true };
+    private const int HistoryLength = 20;
 
     private readonly string _filePath;
     private readonly string _prefsPath;
@@ -76,11 +77,13 @@ public class LinkStore
                 updated.IsPinging = existing.IsPinging;
                 updated.LastPingStarted = existing.LastPingStarted;
                 updated.PingId = existing.PingId;
+                updated.History = existing.History;
             }
             else
             {
                 ResetPingState(updated);
             }
+            updated.Version = existing.Version + 1;
 
             var links = new List<SiteLink>(_links);
             links[index] = updated;
@@ -119,6 +122,7 @@ public class LinkStore
                 link.PingId = pingId.Value;
                 link.IsPinging = true;
                 link.LastPingStarted = DateTime.UtcNow;
+                link.Version++;
             }
         }
         if (pingId is not null)
@@ -141,6 +145,9 @@ public class LinkStore
                 link.LastPingMs = pingMs;
                 link.LastChecked = DateTime.UtcNow;
                 link.IsPinging = false;
+                link.History = [.. link.History.TakeLast(HistoryLength - 1),
+                    new PingSample(pingMs, statusCode is >= 200 and < 400)];
+                link.Version++;
                 found = true;
             }
         }
@@ -160,6 +167,7 @@ public class LinkStore
             link.PingEnabled = !link.PingEnabled;
             if (!link.PingEnabled)
                 ResetPingState(link);
+            link.Version++;
 
             var links = new List<SiteLink>(_links);
             links[index] = link;
@@ -197,6 +205,7 @@ public class LinkStore
         link.LastPingMs = null;
         link.LastChecked = null;
         link.LastPingStarted = null;
+        link.History = [];
     }
 
     private void LoadPrefs()

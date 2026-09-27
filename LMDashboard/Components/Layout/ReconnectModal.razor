@@ -3,25 +3,25 @@
 <dialog id="components-reconnect-modal" data-nosnippet>
     <div class="components-reconnect-container">
         <p class="components-reconnect-first-attempt-visible">
-            SIGNAL LOST &mdash; ATTEMPTING TO REJOIN<span class="lm-modal-cursor" aria-hidden="true"></span>
+            Connection lost. Reconnecting…<span class="lm-modal-cursor" aria-hidden="true"></span>
         </p>
         <p class="components-reconnect-repeated-attempt-visible">
-            REJOIN FAILED &mdash; NEXT ATTEMPT IN <span id="components-seconds-to-next-attempt"></span> SEC<span class="lm-modal-cursor" aria-hidden="true"></span>
+            Couldn't reconnect. Trying again in <span id="components-seconds-to-next-attempt"></span>s<span class="lm-modal-cursor" aria-hidden="true"></span>
         </p>
         <p class="components-reconnect-failed-visible">
-            CONNECTION LOST.<br />RETRY OR RELOAD THE PAGE.
+            Connection lost. Retry or reload the page.
         </p>
         <button id="components-reconnect-button" class="components-reconnect-failed-visible">
-            [RETRY]
+            Retry
         </button>
         <p class="components-pause-visible">
-            SESSION PAUSED BY SERVER.
+            The server paused this session.
         </p>
         <p class="components-resume-failed-visible">
-            FAILED TO RESUME SESSION.<br />RETRY OR RELOAD THE PAGE.
+            Couldn't resume the session. Retry or reload the page.
         </p>
         <button id="components-resume-button" class="components-pause-visible components-resume-failed-visible">
-            [RESUME]
+            Resume
         </button>
     </div>
 </dialog>
